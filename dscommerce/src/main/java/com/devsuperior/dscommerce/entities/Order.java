@@ -1,7 +1,9 @@
 package com.devsuperior.dscommerce.entities;
 
 import jakarta.persistence.*;
-import java.time.Instant; // Adicionado
+import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "tb_order")
@@ -10,26 +12,31 @@ public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(columnDefinition = "TIMESTAMP WITHOUT TIME ZONE")
     private Instant moment;
+
+    @Enumerated(EnumType.STRING)
     private OrderStatus status;
 
     @ManyToOne
     @JoinColumn(name = "client_id")
-    private User client; // Movido para cima
+    private User client;
 
     @OneToOne(mappedBy = "order", cascade = CascadeType.ALL)
     private Payment payment;
 
+    @OneToMany(mappedBy = "id.order")
+    private Set<OrderItem> items = new HashSet<>();
+
     public Order() {
     }
 
-    public Order(Long id, Instant moment, OrderStatus status, User client, Payment payment) {
+    public Order(Long id, Instant moment, OrderStatus status, User client) {
         this.id = id;
         this.moment = moment;
         this.status = status;
         this.client = client;
-        this.payment = payment;
-
     }
 
     public Long getId() {
@@ -71,25 +78,9 @@ public class Order {
     public void setPayment(Payment payment) {
         this.payment = payment;
     }
+
+    public Set<OrderItem> getItems() { // Essencial para acessar os itens
+        return items;
+    }
+
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

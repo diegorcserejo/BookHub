@@ -21,7 +21,6 @@ public class User {
     @OneToMany(mappedBy = "client")
     private List<Order> orders = new ArrayList<>();
 
-    // Construtor padrão (obrigatório para JPA)
     public User() {
     }
 
@@ -84,5 +83,9 @@ public class User {
 
     public List<Order> getOrders() {
         return orders;
+    }
+
+    public void setOrders(List<Order> orders) {
+        this.orders = orders;
     }
 }
