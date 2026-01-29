@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Hub</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="layout-principal">
+    <nav class="navbar barra-navegacao-estilizada">
+        <div class="container-fluid d-flex justify-content-between align-items-center">
+            <a class="navbar-brand texto-branco" href="#">
+                <i class="bi bi-book-half"></i> <span>Book Hub</span>
+            </a>
+
+            <div class="acoes-topo">
+                <button class="botao-adicionar" id="btnAdicionarLivro" data-bs-toggle="modal" data-bs-target="#modalLivro">
+                    <i class="bi bi-plus-lg"></i> <span>Adicionar Livro</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container-fluid conteudo-principal mt-4">
+        <div class="row g-4">
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="cartao-estatistica gradiente-roxo">
+                    <div class="info-cartao">
+                        <span class="titulo-estatistica">Livros</span>
+                        <h2 class="valor-estatistica" id="totalLivros">0</h2>
+                        <span class="subtexto-estatistica">Acervo pessoal</span>
+                    </div>
+                    <i class="bi bi-collection-play-fill icone-fundo"></i>
+                </div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="cartao-estatistica gradiente-rosa">
+                    <div class="info-cartao">
+                        <span class="titulo-estatistica">Lendo Agora</span>
+                        <h2 class="valor-estatistica" id="lendoAgora">0</h2>
+                        <span class="subtexto-estatistica">Progresso ativo</span>
+                    </div>
+                    <i class="bi bi-book-fill icone-fundo"></i>
+                </div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="cartao-estatistica gradiente-azul">
+                    <div class="info-cartao">
+                        <span class="titulo-estatistica">Empréstimos</span>
+                        <h2 class="valor-estatistica" id="emprestimosAtivos">0</h2>
+                        <span class="subtexto-estatistica">Com amigos</span>
+                    </div>
+                    <i class="bi bi-person-heart icone-fundo"></i>
+                </div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="cartao-estatistica gradiente-laranja">
+                    <div class="info-cartao">
+                        <span class="titulo-estatistica">Desejados</span>
+                        <h2 class="valor-estatistica" id="listaDesejos">0</h2>
+                        <span class="subtexto-estatistica">Para comprar</span>
+                    </div>
+                    <i class="bi bi-stars icone-fundo"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-5">
+            <div class="col-lg-8">
+                <div class="painel-dashboard">
+                    <div class="painel-cabecalho">
+                        <h3><i class="bi bi-grid-3x3-gap-fill"></i> Minha Estante</h3>
+                    </div>
+                    <div class="painel-corpo">
+                        <div class="grade-livros" id="gradeLivrosRecentes">
+
+                            <div class="cartao-livro">
+                                <div class="capa-container">
+                                    <img src="imgs/Estou feliz que minha mãe morreu.jpg" alt="Capa" class="capa-imagem">
+                                    <span class="etiqueta-status lendo">Lendo</span>
+                                </div>
+                                <div class="detalhes-livro">
+                                    <h6>Estou feliz que minha mãe morreu</h6>
+                                    <p>Jennette McCurdy</p>
+                                </div>
+                            </div>
+
+                            <div class="cartao-livro">
+                                <div class="capa-container">
+                                    <img src="imgs/A%20Empregada.jpg" alt="Capa" class="capa-imagem">
+                                    <span class="etiqueta-status lendo">Lendo</span>
+                                </div>
+                                <div class="detalhes-livro">
+                                    <h6>A empregada - LIVRO 1</h6>
+                                    <p>Freida McFadden</p>
+                                </div>
+                            </div>
+
+                            <div class="cartao-livro">
+                                <div class="capa-container">
+                                    <img src="imgs/A%20Empregada%202.jpg" alt="Capa" class="capa-imagem">
+                                    <span class="etiqueta-status lendo">Lendo</span>
+                                </div>
+                                <div class="detalhes-livro">
+                                    <h6>O segredo da empregada - LIVRO 2</h6>
+                                    <p>Freida McFadden</p>
+                                </div>
+                            </div>
+
+                            <div class="cartao-livro">
+                                <div class="capa-container">
+                                    <img src="imgs/A%20Empregada%203.jpg" alt="Capa" class="capa-imagem">
+                                    <span class="etiqueta-status lendo">Lendo</span>
+                                </div>
+                                <div class="detalhes-livro">
+                                    <h6>A empregada está de olho - LIVRO 3</h6>
+                                    <p>Freida McFadden</p>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="painel-dashboard">
+                    <div class="painel-cabecalho">
+                        <h3><i class="bi bi-people"></i> Amigos Online</h3>
+                    </div>
+                    <div class="painel-corpo">
+                        <ul class="lista-amigos">
+                            <li class="amigo-item">
+                                <div class="avatar-placeholder" style="width: 45px; height: 45px; background: #ddd; border-radius: 12px; margin-right: 15px;"></div>
+                                <div>
+                                    <strong>Ana Silva</strong>
+                                    <span>Lendo: Harry Potter</span>
+                                </div>
+                            </li>
+                            <li class="amigo-item">
+                                <div class="avatar-placeholder" style="width: 45px; height: 45px; background: #ddd; border-radius: 12px; margin-right: 15px;"></div>
+                                <div>
+                                    <strong>Bruno Costa</strong>
+                                    <span>Online</span>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+<div class="modal fade" id="modalLivro" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-estilizado">
+            <div class="modal-header border-0">
+                <h5 class="modal-title">Novo Livro</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formularioLivro">
+                    <div class="mb-3">
+                        <label class="form-label">Título</label>
+                        <input type="text" class="form-control entrada-estilizada" placeholder="Ex: O Pequeno Príncipe">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Autor</label>
+                        <input type="text" class="form-control entrada-estilizada" placeholder="Nome do autor">
+                    </div>
+                    <button type="button" class="btn botao-salvar w-100">Salvar na Estante</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
