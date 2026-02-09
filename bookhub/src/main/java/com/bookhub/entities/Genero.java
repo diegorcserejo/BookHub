@@ -15,10 +15,11 @@ public class Genero {
     @Column(unique = true)
     private String name;
 
-    private String color; // Cor para identificação visual
+    private String color;
 
-    @ManyToMany(mappedBy = "generos")
-    private Set<Livro> livros = new HashSet<>();
+    // RELACIONAMENTO COMENTADO TEMPORARIAMENTE
+    // @ManyToMany(mappedBy = "generos")
+    // private Set<Livro> livros = new HashSet<>();
 
     public Genero() {}
 
@@ -44,13 +45,5 @@ public class Genero {
 
     public void setColor(String color) {
         this.color = color;
-    }
-
-    public Set<Livro> getLivros() {
-        return livros;
-    }
-
-    public void setLivros(Set<Livro> livros) {
-        this.livros = livros;
     }
 }

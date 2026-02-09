@@ -1,9 +1,9 @@
 package com.bookhub.entities;
 
+import com.bookhub.entities.enums.BookCondition;
+import com.bookhub.entities.enums.ReadingStatus;
 import jakarta.persistence.*;
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Set;
 
 @Entity
 @Table(name = "tb_livro")
@@ -36,14 +36,15 @@ public class Livro {
     private LocalDate finishDate;
     private String notes;
 
-    @ManyToMany
-    @JoinTable(name = "tb_livro_genero",
-            joinColumns = @JoinColumn(name = "livro_id"),
-            inverseJoinColumns = @JoinColumn(name = "genero_id"))
-    private Set<Genero> generos = new HashSet<>();
-
-    @OneToMany(mappedBy = "book")
-    private Set<Loan> loans = new HashSet<>();
+    // RELACIONAMENTOS COMENTADOS TEMPORARIAMENTE
+    // @ManyToMany
+    // @JoinTable(name = "tb_livro_genero",
+    //         joinColumns = @JoinColumn(name = "livro_id"),
+    //         inverseJoinColumns = @JoinColumn(name = "genero_id"))
+    // private Set<Genero> generos = new HashSet<>();
+    //
+    // @OneToMany(mappedBy = "livro")
+    // private Set<Loan> loans = new HashSet<>();
 
     public Livro() {}
 
@@ -167,19 +168,4 @@ public class Livro {
         this.notes = notes;
     }
 
-    public Set<Genero> getGeneros() {
-        return generos;
-    }
-
-    public void setGeneros(Set<Genero> generos) {
-        this.generos = generos;
-    }
-
-    public Set<Loan> getLoans() {
-        return loans;
-    }
-
-    public void setLoans(Set<Loan> loans) {
-        this.loans = loans;
-    }
 }

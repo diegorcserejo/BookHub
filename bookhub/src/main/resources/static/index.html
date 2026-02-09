@@ -117,20 +117,56 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content modal-estilizado">
             <div class="modal-header border-0">
-                <h5 class="modal-title">Novo Livro</h5>
+                <h5 class="modal-title">Adicionar Livro</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <form id="formularioLivro">
                     <div class="mb-3">
-                        <label class="form-label">Título</label>
-                        <input type="text" class="form-control entrada-estilizada" placeholder="Ex: O Pequeno Príncipe">
+                        <label class="form-label">Título *</label>
+                        <input type="text" class="form-control entrada-estilizada" id="tituloLivro" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Autor</label>
-                        <input type="text" class="form-control entrada-estilizada" placeholder="Nome do autor">
+                        <label class="form-label">Autor *</label>
+                        <input type="text" class="form-control entrada-estilizada" id="autorLivro" required>
                     </div>
-                    <button type="button" class="btn botao-salvar w-100">Salvar na Estante</button>
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="button" class="btn btn-status" data-status="desejado">
+                                <i class="bi bi-star"></i> Desejado
+                            </button>
+                            <button type="button" class="btn btn-status active" data-status="lendo">
+                                <i class="bi bi-book-half"></i> Lendo
+                            </button>
+                            <button type="button" class="btn btn-status" data-status="lido">
+                                <i class="bi bi-check-circle"></i> Lido
+                            </button>
+                            <button type="button" class="btn btn-status" data-status="abandonado">
+                                <i class="bi bi-x-circle"></i> Abandonado
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">URL da Capa</label>
+                        <input type="text" class="form-control entrada-estilizada" id="capaLivro"
+                               placeholder="https://exemplo.com/capa.jpg">
+                        <small class="text-muted">Deixe em branco para usar capa padrão</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Ano de Publicação</label>
+                        <input type="number" class="form-control entrada-estilizada" id="anoLivro"
+                               min="1000" max="2024">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Número de Páginas</label>
+                        <input type="number" class="form-control entrada-estilizada" id="paginasLivro"
+                               min="1">
+                    </div>
+                    <input type="hidden" id="statusLivro" value="lendo">
+                    <button type="submit" class="btn botao-salvar w-100">
+                        <i class="bi bi-save"></i> Salvar Livro
+                    </button>
                 </form>
             </div>
         </div>

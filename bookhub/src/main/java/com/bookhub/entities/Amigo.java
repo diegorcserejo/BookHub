@@ -16,8 +16,9 @@ public class Amigo {
     private String email;
     private String phone;
 
-    @OneToMany(mappedBy = "amigo")
-    private Set<Loan> loans = new HashSet<>();
+    // REMOVIDO O RELACIONAMENTO PROBLEMÁTICO
+    // @OneToMany(mappedBy = "amigo")
+    // private Set<Loan> loans = new HashSet<>();
 
     public Amigo() {}
 
@@ -51,13 +52,5 @@ public class Amigo {
 
     public void setPhone(String phone) {
         this.phone = phone;
-    }
-
-    public Set<Loan> getLoans() {
-        return loans;
-    }
-
-    public void setLoans(Set<Loan> loans) {
-        this.loans = loans;
     }
 }

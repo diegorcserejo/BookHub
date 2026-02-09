@@ -1,4 +1,4 @@
-package com.bookhub.entities;
+package com.bookhub.entities.enums;
 
 public enum ReadingStatus {
     WANT_TO_READ("Quero Ler"),

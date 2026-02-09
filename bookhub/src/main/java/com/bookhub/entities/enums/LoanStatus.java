@@ -1,4 +1,4 @@
-package com.bookhub.entities;
+package com.bookhub.entities.enums;
 
 public enum LoanStatus {
     ACTIVE("Ativo"),

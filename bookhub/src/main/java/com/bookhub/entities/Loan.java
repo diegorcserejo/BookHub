@@ -1,5 +1,6 @@
 package com.bookhub.entities;
 
+import com.bookhub.entities.enums.LoanStatus;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 
@@ -18,9 +19,14 @@ public class Loan {
     @Enumerated(EnumType.STRING)
     private LoanStatus status;
 
-    @ManyToOne
-    @JoinColumn(name = "livro_id")
-    private Livro livro;
+    // RELACIONAMENTOS COMENTADOS TEMPORARIAMENTE
+    // @ManyToOne
+    // @JoinColumn(name = "livro_id")
+    // private Livro livro;
+    //
+    // @ManyToOne
+    // @JoinColumn(name = "amigo_id")
+    // private Amigo amigo;
 
     private String notes;
 
@@ -64,14 +70,6 @@ public class Loan {
 
     public void setStatus(LoanStatus status) {
         this.status = status;
-    }
-
-    public Livro getLivro() {
-        return livro;
-    }
-
-    public void setLivro(Livro livro) {
-        this.livro = livro;
     }
 
     public String getNotes() {
