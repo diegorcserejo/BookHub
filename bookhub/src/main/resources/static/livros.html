@@ -79,6 +79,28 @@
                     <div class="painel-cabecalho">
                         <h3><i class="bi bi-grid-3x3-gap-fill"></i> Minha Estante</h3>
                     </div>
+
+                    <!-- Container para filtros -->
+                    <div class="filtros-container">
+                        <!-- Filtros de status já existentes -->
+                        <div class="filtros-status mt-3">
+                            <span class="filtro-status active" data-filtro="todos">Todos</span>
+                            <span class="filtro-status" data-filtro="lendo">Lendo</span>
+                            <span class="filtro-status" data-filtro="lido">Lidos</span>
+                            <span class="filtro-status" data-filtro="emprestado">Emprestados</span>
+                            <span class="filtro-status" data-filtro="desejado">Desejados</span>
+                        </div>
+
+                        <!-- NOVO: Filtros de Gênero -->
+                        <div class="filtros-genero mt-3">
+                            <h6 class="mb-2">Filtrar por Gênero:</h6>
+                            <div class="filtros-genero-botoes">
+                                <span class="filtro-genero active" data-genero="todos">Todos</span>
+                                <!-- Gêneros serão adicionados dinamicamente pelo JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="painel-corpo">
                         <div class="grade-livros" id="gradeLivrosRecentes">
 
@@ -90,6 +112,7 @@
                                 <div class="detalhes-livro">
                                     <h6>Estou feliz que minha mãe morreu</h6>
                                     <p>Jennette McCurdy</p>
+                                    <span class="genero-livro">Biografia</span>
                                 </div>
                             </div>
 
@@ -101,6 +124,7 @@
                                 <div class="detalhes-livro">
                                     <h6>A empregada - Livro 1</h6>
                                     <p>Freida McFadden</p>
+                                    <span class="genero-livro">Suspense</span>
                                 </div>
                             </div>
 
@@ -112,6 +136,7 @@
                                 <div class="detalhes-livro">
                                     <h6>O segredo da empregada - Livro 2</h6>
                                     <p>Freida McFadden</p>
+                                    <span class="genero-livro">Suspense</span>
                                 </div>
                             </div>
 
@@ -123,6 +148,7 @@
                                 <div class="detalhes-livro">
                                     <h6>A empregada está de olho - Livro 3</h6>
                                     <p>Freida McFadden</p>
+                                    <span class="genero-livro">Suspense</span>
                                 </div>
                             </div>
 
@@ -134,6 +160,7 @@
                                 <div class="detalhes-livro">
                                     <h6>13 Reasons Why</h6>
                                     <p>Jay Asher</p>
+                                    <span class="genero-livro">Drama</span>
                                 </div>
                             </div>
 
@@ -145,6 +172,7 @@
                                 <div class="detalhes-livro">
                                     <h6>Harry Potter e a Pedra Filosofal: 1</h6>
                                     <p>J.K. Rowling</p>
+                                    <span class="genero-livro">Fantasia</span>
                                 </div>
                             </div>
 
@@ -156,6 +184,7 @@
                                 <div class="detalhes-livro">
                                     <h6>Harry Potter e a Câmara Secreta: 2</h6>
                                     <p>J.K. Rowling</p>
+                                    <span class="genero-livro">Fantasia</span>
                                 </div>
                             </div>
 
@@ -167,6 +196,7 @@
                                 <div class="detalhes-livro">
                                     <h6>Harry Potter e o Prisioneiro de Azkaban: 3</h6>
                                     <p>J.K. Rowling</p>
+                                    <span class="genero-livro">Fantasia</span>
                                 </div>
                             </div>
 
@@ -178,6 +208,7 @@
                                 <div class="detalhes-livro">
                                     <h6>Harry Potter e o Cálice de Fogo: 4</h6>
                                     <p>J.K. Rowling</p>
+                                    <span class="genero-livro">Fantasia</span>
                                 </div>
                             </div>
 
@@ -189,6 +220,7 @@
                                 <div class="detalhes-livro">
                                     <h6>Harry Potter e a Ordem da Fênix: 5</h6>
                                     <p>J.K. Rowling</p>
+                                    <span class="genero-livro">Fantasia</span>
                                 </div>
                             </div>
 
@@ -200,6 +232,7 @@
                                 <div class="detalhes-livro">
                                     <h6>Harry Potter e o Enigma do Príncipe: 6</h6>
                                     <p>J.K. Rowling</p>
+                                    <span class="genero-livro">Fantasia</span>
                                 </div>
                             </div>
 
@@ -211,6 +244,7 @@
                                 <div class="detalhes-livro">
                                     <h6>Harry Potter e as Relíquias da Morte: 7</h6>
                                     <p>J.K. Rowling</p>
+                                    <span class="genero-livro">Fantasia</span>
                                 </div>
                             </div>
                         </div>
@@ -281,6 +315,30 @@
                             </button>
                         </div>
                     </div>
+
+                    <!-- NOVO: Campo de Gênero -->
+                    <div class="mb-3">
+                        <label class="form-label">Gênero</label>
+                        <select class="form-control entrada-estilizada" id="generoLivro">
+                            <option value="">Selecione um gênero...</option>
+                            <option value="Fantasia">Fantasia</option>
+                            <option value="Romance">Romance</option>
+                            <option value="Suspense">Suspense</option>
+                            <option value="Drama">Drama</option>
+                            <option value="Biografia">Biografia</option>
+                            <option value="Young Adult">Young Adult</option>
+                            <option value="Ficção Científica">Ficção Científica</option>
+                            <option value="Aventura">Aventura</option>
+                            <option value="Terror">Terror</option>
+                            <option value="Mistério">Mistério</option>
+                            <option value="História">História</option>
+                            <option value="Autoajuda">Autoajuda</option>
+                            <option value="Poesia">Poesia</option>
+                            <option value="Outros">Outros</option>
+                        </select>
+                        <small class="text-muted">Opcional - ajuda na organização</small>
+                    </div>
+
                     <div class="mb-3">
                         <label class="form-label">Imagem da Capa (URL)</label>
                         <input type="text" class="form-control entrada-estilizada" id="capaLivro" placeholder="Cole a URL da imagem ou deixe em branco">
@@ -369,6 +427,12 @@
                         <button class="filtro-ano-btn active" data-ano="todos">
                             Todos os Anos
                         </button>
+                        <button class="filtro-ano-btn" data-ano="2022">
+                            2022
+                        </button>
+                        <button class="filtro-ano-btn" data-ano="2023">
+                            2023
+                        </button>
                         <button class="filtro-ano-btn" data-ano="2024">
                             2024
                         </button>
@@ -389,6 +453,28 @@
                             <i class="bi bi-calendar-x"></i>
                             <p>Selecione um ano para ver os livros</p>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NOVA SEÇÃO: Distribuição por Gênero -->
+        <div class="painel-dashboard mt-4">
+            <div class="painel-cabecalho">
+                <h3><i class="bi bi-pie-chart"></i> Distribuição por Gênero</h3>
+            </div>
+            <div class="painel-corpo">
+                <div class="filtro-genero-opcoes mb-3">
+                    <button class="filtro-genero-btn active" data-genero="todos">
+                        Todos os Gêneros
+                    </button>
+                    <!-- Botões serão adicionados dinamicamente -->
+                </div>
+                <div class="livros-por-generos" id="livrosPorGeneros">
+                    <!-- Gráfico/Lista será carregado dinamicamente -->
+                    <div class="sem-dados">
+                        <i class="bi bi-pie-chart"></i>
+                        <p>Adicione livros para ver a distribuição por gênero</p>
                     </div>
                 </div>
             </div>
@@ -470,10 +556,6 @@
 
 
 <!-- IDEIAS
-
-1.Perfil do Usuário
-Adicionar foto, bio, Filtro de Livros lidos em 2024, 2025, 2026 antes e assim por diante
-Estatísticas pessoais: total de livros, tempo médio por livro, gêneros preferidos..
 
 2.Conectar com Google Books ou Open Library para buscar capas, sinopses e ISBN automaticamente.
 

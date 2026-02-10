@@ -1,5 +1,6 @@
 let livros = [];
 let statusSelecionado = 'todos';
+let generoSelecionado = 'todos';
 
 const statusMap = {
     'WANT_TO_READ': { front: 'desejado', label: 'Desejado', color: 'desejado' },
@@ -13,7 +14,8 @@ document.addEventListener('DOMContentLoaded', function() {
     inicializarLivros();
     atualizarEstatisticas();
     adicionarFiltros();
-    inicializarPerfilUsuario(); // NOVO: Inicializar perfil
+    adicionarFiltrosGenero(); // NOVO: Adicionar filtros de gênero
+    inicializarPerfilUsuario();
 });
 
 function inicializarLivros() {
@@ -21,7 +23,6 @@ function inicializarLivros() {
 
     if (livrosSalvos) {
         livros = JSON.parse(livrosSalvos);
-
         renderizarNovosLivros();
     } else {
         livros = [];
@@ -63,15 +64,13 @@ function adicionarControlesLivrosHTML() {
 
 function mudarStatusLivroHTML(etiqueta) {
     const statusOrder = ['lendo', 'lido', 'desejado', 'emprestado'];
-    const statusAtual = etiqueta.className.split(' ')[1]; // Pega a segunda classe
+    const statusAtual = etiqueta.className.split(' ')[1];
     const currentIndex = statusOrder.indexOf(statusAtual);
     const nextIndex = (currentIndex + 1) % statusOrder.length;
     const novoStatus = statusOrder[nextIndex];
 
-    // Atualizar classe e texto
     etiqueta.className = `etiqueta-status ${novoStatus}`;
 
-    // Atualizar texto baseado no status
     const statusLabels = {
         'lendo': 'Lendo',
         'lido': 'Lido',
@@ -80,15 +79,11 @@ function mudarStatusLivroHTML(etiqueta) {
     };
 
     etiqueta.textContent = statusLabels[novoStatus] || 'Lendo';
-
-    // Atualizar estatísticas
     atualizarEstatisticas();
-    atualizarTodasEstatisticas(); // NOVO: Atualizar estatísticas do perfil também
+    atualizarTodasEstatisticas();
 }
 
-// Configurar eventos
 function inicializarEventos() {
-    // Botões de status no modal
     document.querySelectorAll('.btn-status').forEach(btn => {
         btn.addEventListener('click', function() {
             document.querySelectorAll('.btn-status').forEach(b => b.classList.remove('active'));
@@ -97,7 +92,6 @@ function inicializarEventos() {
         });
     });
 
-    // Formulário de adicionar livro
     const formulario = document.getElementById('formularioLivro');
     if (formulario) {
         formulario.addEventListener('submit', function(e) {
@@ -107,34 +101,32 @@ function inicializarEventos() {
             const autor = document.getElementById('autorLivro').value.trim();
             const status = document.getElementById('statusLivro').value;
             const capa = document.getElementById('capaLivro').value.trim();
+            const genero = document.getElementById('generoLivro') ? document.getElementById('generoLivro').value : '';
 
             if (!titulo || !autor) {
                 alert('Por favor, preencha título e autor');
                 return;
             }
 
-            // Mapear status do front para back
             const statusBackend = mapearStatusParaBackend(status);
             const statusInfo = mapearStatusParaFront(statusBackend);
 
             const novoLivro = {
-                id: Date.now(), // ID único baseado no timestamp
+                id: Date.now(),
                 titulo: titulo,
                 autor: autor,
                 status: statusBackend,
                 statusFront: status,
                 statusLabel: statusInfo.label,
                 statusColor: statusInfo.color,
-                coverUrl: capa || null
+                coverUrl: capa || null,
+                genero: genero || 'Outros' // NOVO: Adicionar gênero ao livro
             };
 
             adicionarLivro(novoLivro);
-
-            // Resetar formulário
             this.reset();
             document.querySelector('.btn-status[data-status="lendo"]').click();
 
-            // Fechar modal
             const modalEl = document.getElementById('modalLivro');
             const modal = bootstrap.Modal.getInstance(modalEl);
             if (modal) {
@@ -144,7 +136,6 @@ function inicializarEventos() {
     }
 }
 
-// Funções auxiliares
 function mapearStatusParaBackend(statusFront) {
     const map = {
         'desejado': 'WANT_TO_READ',
@@ -159,42 +150,41 @@ function mapearStatusParaFront(statusBackend) {
     return statusMap[statusBackend] || { front: 'desejado', label: 'Desejado', color: 'desejado' };
 }
 
-// Renderizar APENAS os novos livros (adicionados pelo JS)
 function renderizarNovosLivros() {
     const container = document.getElementById('gradeLivrosRecentes');
     if (!container) return;
 
-    // Filtrar livros (para mostrar apenas os relevantes quando houver filtros)
-    const livrosFiltrados = statusSelecionado === 'todos'
-        ? livros
-        : livros.filter(l => {
-            return l.statusFront === statusSelecionado;
-        });
+    const livrosFiltrados = livros.filter(livro => {
+        // Filtro por status
+        const statusMatch = statusSelecionado === 'todos' || livro.statusFront === statusSelecionado;
 
-    // Remover apenas os livros adicionados pelo JS (não os do HTML)
+        // Filtro por gênero
+        const generoMatch = generoSelecionado === 'todos' ||
+            (livro.genero && livro.genero.toLowerCase() === generoSelecionado.toLowerCase());
+
+        return statusMatch && generoMatch;
+    });
+
     document.querySelectorAll('.cartao-livro[data-id-js]').forEach(el => {
         el.remove();
     });
 
-    // Se não houver livros filtrados, não fazer nada
     if (livrosFiltrados.length === 0) {
         return;
     }
 
-    // Renderizar cada novo livro
     livrosFiltrados.forEach(livro => {
         const livroElement = criarElementoLivroJS(livro);
         container.appendChild(livroElement);
     });
 }
 
-// Criar elemento HTML para novo livro (adicionado pelo JS)
 function criarElementoLivroJS(livro) {
     const div = document.createElement('div');
     div.className = 'cartao-livro';
-    div.setAttribute('data-id-js', livro.id); // Marca como livro do JS
+    div.setAttribute('data-id-js', livro.id);
+    div.setAttribute('data-genero', livro.genero || 'Outros'); // NOVO: Atributo para gênero
 
-    // Determinar URL da capa
     let capaHTML;
     if (livro.coverUrl && livro.coverUrl !== '') {
         capaHTML = `<img src="${livro.coverUrl}" alt="${livro.titulo}" class="capa-imagem">`;
@@ -221,10 +211,10 @@ function criarElementoLivroJS(livro) {
         <div class="detalhes-livro">
             <h6 class="titulo-livro">${livro.titulo}</h6>
             <p class="autor-livro">${livro.autor}</p>
+            ${livro.genero ? `<span class="genero-livro">${livro.genero}</span>` : ''}
         </div>
     `;
 
-    // Configurar fallback para imagem quebrada
     if (livro.coverUrl && livro.coverUrl !== '') {
         const img = div.querySelector('img');
         if (img) {
@@ -235,7 +225,6 @@ function criarElementoLivroJS(livro) {
         }
     }
 
-    // Adicionar eventos aos botões
     div.querySelector('.btn-mudar-status-js').addEventListener('click', (e) => {
         e.stopPropagation();
         mudarStatusLivroJS(livro.id);
@@ -251,26 +240,24 @@ function criarElementoLivroJS(livro) {
     return div;
 }
 
-// Funções CRUD para livros do JS
 function adicionarLivro(livro) {
     livros.unshift(livro);
     salvarNoLocalStorage();
     atualizarEstatisticas();
     renderizarNovosLivros();
-    atualizarTodasEstatisticas(); // NOVO: Atualizar estatísticas do perfil
+    atualizarTodasEstatisticas();
+    atualizarFiltrosGenero(); // NOVO: Atualizar filtros de gênero quando adicionar livro
 }
 
 function mudarStatusLivroJS(id) {
     const livro = livros.find(l => l.id === id);
     if (!livro) return;
 
-    // Rotacionar status
     const statusOrder = ['desejado', 'lendo', 'lido', 'emprestado'];
     const currentIndex = statusOrder.indexOf(livro.statusFront);
     const nextIndex = (currentIndex + 1) % statusOrder.length;
     const novoStatusFront = statusOrder[nextIndex];
 
-    // Atualizar objeto
     livro.statusFront = novoStatusFront;
     livro.status = mapearStatusParaBackend(novoStatusFront);
 
@@ -281,7 +268,7 @@ function mudarStatusLivroJS(id) {
     salvarNoLocalStorage();
     atualizarEstatisticas();
     renderizarNovosLivros();
-    atualizarTodasEstatisticas(); // NOVO: Atualizar estatísticas do perfil
+    atualizarTodasEstatisticas();
 }
 
 function removerLivroJS(id) {
@@ -291,7 +278,8 @@ function removerLivroJS(id) {
         salvarNoLocalStorage();
         atualizarEstatisticas();
         renderizarNovosLivros();
-        atualizarTodasEstatisticas(); // NOVO: Atualizar estatísticas do perfil
+        atualizarTodasEstatisticas();
+        atualizarFiltrosGenero(); // NOVO: Atualizar filtros de gênero quando remover livro
     }
 }
 
@@ -299,7 +287,6 @@ function salvarNoLocalStorage() {
     localStorage.setItem('bookHubLivrosNovos', JSON.stringify(livros));
 }
 
-// Adicionar filtros de status
 function adicionarFiltros() {
     const cabecalho = document.querySelector('.painel-cabecalho h3');
     if (!cabecalho) return;
@@ -321,30 +308,145 @@ function adicionarFiltros() {
 
     cabecalho.insertAdjacentHTML('afterend', filtrosHTML);
 
-    // Eventos dos filtros
     document.querySelectorAll('.filtro-status').forEach(filtro => {
         filtro.addEventListener('click', function() {
             statusSelecionado = this.dataset.filtro;
             document.querySelectorAll('.filtro-status').forEach(f => f.classList.remove('active'));
             this.classList.add('active');
-
-            // Aplicar filtro tanto aos livros do HTML quanto do JS
             aplicarFiltroLivros();
         });
     });
 }
 
-// Aplicar filtro a todos os livros (HTML + JS)
+// NOVO: Adicionar filtros de gênero/categoria
+function adicionarFiltrosGenero() {
+    const container = document.querySelector('.filtros-container');
+    if (!container) return;
+
+    // Verificar se já existem filtros de gênero
+    const filtrosGeneroExistentes = document.querySelector('.filtros-genero');
+    if (filtrosGeneroExistentes) {
+        filtrosGeneroExistentes.remove();
+    }
+
+    // Obter todos os gêneros disponíveis
+    const generosDisponiveis = obterGenerosDisponiveis();
+
+    let filtrosHTML = `
+        <div class="filtros-genero mt-3">
+            <h6 class="mb-2">Filtrar por Gênero:</h6>
+            <div class="filtros-genero-botoes">
+                <span class="filtro-genero ${generoSelecionado === 'todos' ? 'active' : ''}" data-genero="todos">Todos</span>
+    `;
+
+    generosDisponiveis.forEach(genero => {
+        const isActive = generoSelecionado === genero ? 'active' : '';
+        filtrosHTML += `<span class="filtro-genero ${isActive}" data-genero="${genero}">${genero}</span>`;
+    });
+
+    filtrosHTML += `
+            </div>
+        </div>
+    `;
+
+    container.insertAdjacentHTML('beforeend', filtrosHTML);
+
+    // Adicionar eventos aos filtros de gênero
+    document.querySelectorAll('.filtro-genero').forEach(filtro => {
+        filtro.addEventListener('click', function() {
+            generoSelecionado = this.dataset.genero;
+            document.querySelectorAll('.filtro-genero').forEach(f => f.classList.remove('active'));
+            this.classList.add('active');
+            aplicarFiltroLivros();
+        });
+    });
+}
+
+// NOVO: Obter gêneros disponíveis
+function obterGenerosDisponiveis() {
+    const generosSet = new Set();
+
+    // Adicionar gêneros dos livros HTML
+    const livrosHTML = document.querySelectorAll('#gradeLivrosRecentes .cartao-livro:not([data-id-js])');
+    livrosHTML.forEach(cartao => {
+        const titulo = cartao.querySelector('.titulo-livro, .detalhes-livro h6, h6')?.textContent || '';
+        const genero = detectarGeneroPorTitulo(titulo);
+        if (genero) generosSet.add(genero);
+    });
+
+    // Adicionar gêneros dos livros JS
+    livros.forEach(livro => {
+        if (livro.genero) {
+            generosSet.add(livro.genero);
+        } else {
+            const generoDetectado = detectarGeneroPorTitulo(livro.titulo);
+            if (generoDetectado) {
+                generoSet.add(generoDetectado);
+                livro.genero = generoDetectado;
+            }
+        }
+    });
+
+    return Array.from(generosSet).sort();
+}
+
+// NOVO: Detectar gênero por título
+function detectarGeneroPorTitulo(titulo) {
+    const tituloLower = titulo.toLowerCase();
+
+    const generosMap = {
+        'Fantasia': ['harry potter', 'senhor dos anéis', 'magia', 'feiticeiro', 'dragão'],
+        'Romance': ['heartstopper', 'amor', 'coração', 'paixão', 'romance'],
+        'Suspense': ['empregada', 'segredo', 'mistério', 'thriller', 'crime'],
+        'Drama': ['13 reasons why', 'drama', 'vida', 'emoção', 'conflito'],
+        'Biografia': ['mãe morreu', 'biografia', 'memórias', 'autobiografia'],
+        'Young Adult': ['adolescente', 'jovem', 'escola', 'ya', 'juventude'],
+        'Ficção Científica': ['ficção científica', 'espaço', 'futuro', 'alienígena'],
+        'Aventura': ['aventura', 'viagem', 'exploração', 'ação']
+    };
+
+    for (const [genero, palavras] of Object.entries(generosMap)) {
+        for (const palavra of palavras) {
+            if (tituloLower.includes(palavra.toLowerCase())) {
+                return genero;
+            }
+        }
+    }
+
+    return null;
+}
+
+// NOVO: Atualizar filtros de gênero
+function atualizarFiltrosGenero() {
+    const generosDisponiveis = obterGenerosDisponiveis();
+
+    // Atualizar o localStorage com os gêneros
+    let perfil = JSON.parse(localStorage.getItem('bookHubPerfil')) || {};
+    perfil.generosDisponiveis = generosDisponiveis;
+    localStorage.setItem('bookHubPerfil', JSON.stringify(perfil));
+
+    // Re-renderizar os filtros
+    adicionarFiltrosGenero();
+}
+
 function aplicarFiltroLivros() {
-    // Primeiro, mostrar/esconder livros do HTML
+    // Aplicar filtro para livros HTML
     const todosLivrosHTML = document.querySelectorAll('#gradeLivrosRecentes .cartao-livro:not([data-id-js])');
 
     todosLivrosHTML.forEach(cartao => {
         const etiqueta = cartao.querySelector('.etiqueta-status');
-        if (etiqueta) {
-            const statusLivro = etiqueta.className.split(' ')[1]; // Pega a classe de status
+        const titulo = cartao.querySelector('.titulo-livro, .detalhes-livro h6, h6')?.textContent || '';
+        const generoDoLivro = detectarGeneroPorTitulo(titulo) || 'Outros';
 
-            if (statusSelecionado === 'todos' || statusLivro === statusSelecionado) {
+        if (etiqueta) {
+            const statusLivro = etiqueta.className.split(' ')[1];
+
+            // Verificar ambos os filtros
+            const statusMatch = statusSelecionado === 'todos' || statusLivro === statusSelecionado;
+            const generoMatch = generoSelecionado === 'todos' ||
+                generoDoLivro.toLowerCase() === generoSelecionado.toLowerCase();
+
+            if (statusMatch && generoMatch) {
                 cartao.style.display = 'block';
             } else {
                 cartao.style.display = 'none';
@@ -352,13 +454,11 @@ function aplicarFiltroLivros() {
         }
     });
 
-    // Depois, renderizar livros do JS com o filtro
+    // Aplicar filtro para livros JS
     renderizarNovosLivros();
 }
 
-// Atualizar estatísticas (contando livros do HTML + JS)
 function atualizarEstatisticas() {
-    // Contar livros do HTML
     const livrosHTML = document.querySelectorAll('#gradeLivrosRecentes .cartao-livro:not([data-id-js])');
 
     let totalHTML = livrosHTML.length;
@@ -371,7 +471,6 @@ function atualizarEstatisticas() {
         const etiqueta = cartao.querySelector('.etiqueta-status');
         if (etiqueta) {
             const statusClass = etiqueta.className.split(' ')[1];
-
             switch(statusClass) {
                 case 'lendo': lendoHTML++; break;
                 case 'lido': lidoHTML++; break;
@@ -381,13 +480,11 @@ function atualizarEstatisticas() {
         }
     });
 
-    // Contar livros do JS
     const lendoJS = livros.filter(l => l.statusFront === 'lendo').length;
     const lidoJS = livros.filter(l => l.statusFront === 'lido').length;
     const desejadoJS = livros.filter(l => l.statusFront === 'desejado').length;
     const emprestadoJS = livros.filter(l => l.statusFront === 'emprestado').length;
 
-    // Totais combinados
     const total = totalHTML + livros.length;
     const lendoTotal = lendoHTML + lendoJS;
     const desejadoTotal = desejadoHTML + desejadoJS;
@@ -403,47 +500,29 @@ function atualizarEstatisticas() {
 // FUNÇÕES DO PERFIL DO USUÁRIO
 // ============================================
 
-// Inicializar perfil do usuário
 function inicializarPerfilUsuario() {
-    // Carregar dados do perfil do localStorage
     carregarDadosPerfil();
-
-    // Configurar eventos do perfil
     configurarEventosPerfil();
-
-    // Calcular estatísticas do perfil
     calcularEstatisticasPerfil();
-
-    // Atualizar filtro por ano
     atualizarFiltroAno();
-
-    // Detectar gêneros preferidos
-    detectarGenerosLivros();
+    atualizarFiltroGeneroPerfil(); // NOVO: Atualizar gráfico de gêneros no perfil
 }
 
-// Carregar dados do perfil
 function carregarDadosPerfil() {
     const perfilSalvo = localStorage.getItem('bookHubPerfil');
 
     if (perfilSalvo) {
         const perfil = JSON.parse(perfilSalvo);
-
-        // Atualizar bio se existir
         if (perfil.bio) {
             document.getElementById('bioUsuario').textContent = perfil.bio;
         }
-
-        // Atualizar meta anual se existir
         if (perfil.metaAnual) {
             document.getElementById('metaAnual').textContent = perfil.metaAnual;
         }
-
-        // Atualizar gêneros se existirem
         if (perfil.generos && perfil.generos.length > 0) {
             renderizarGeneros(perfil.generos);
         }
     } else {
-        // Criar perfil padrão se não existir
         const perfilPadrao = {
             bio: 'Apaixonado(a) por leitura! 📚',
             metaAnual: 12,
@@ -455,9 +534,7 @@ function carregarDadosPerfil() {
     }
 }
 
-// Configurar eventos do perfil
 function configurarEventosPerfil() {
-    // Botão de editar bio
     const btnEditarBio = document.getElementById('btnEditarBio');
     const bioUsuario = document.getElementById('bioUsuario');
 
@@ -471,7 +548,6 @@ function configurarEventosPerfil() {
         });
     }
 
-    // Botões de filtro por ano
     document.querySelectorAll('.filtro-ano-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             document.querySelectorAll('.filtro-ano-btn').forEach(b => b.classList.remove('active'));
@@ -481,37 +557,150 @@ function configurarEventosPerfil() {
         });
     });
 
-    // Botão de alterar foto
+    // NOVO: Eventos para filtros de gênero no perfil
+    document.querySelectorAll('.filtro-genero-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.filtro-genero-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            const generoSelecionado = this.dataset.genero;
+            filtrarGeneros(generoSelecionado);
+        });
+    });
+
     const btnAlterarFoto = document.querySelector('.btn-alterar-foto');
     if (btnAlterarFoto) {
         btnAlterarFoto.addEventListener('click', function() {
-            // Em uma implementação real, você abriria um seletor de arquivos
             alert('Funcionalidade de alterar foto será implementada em breve!');
         });
     }
 }
 
-// Editar bio do usuário
+// NOVO: Atualizar gráfico de gêneros no perfil
+function atualizarFiltroGeneroPerfil() {
+    const generos = detectarGenerosLivros();
+
+    const container = document.getElementById('livrosPorGeneros');
+    if (!container) return;
+
+    if (!generos || generos.length === 0) {
+        container.innerHTML = `
+            <div class="sem-dados">
+                <i class="bi bi-info-circle"></i>
+                <p>Adicione livros para ver a distribuição por gênero</p>
+            </div>
+        `;
+        return;
+    }
+
+    // Ordenar por quantidade
+    generos.sort((a, b) => b.quantidade - a.quantidade);
+
+    // Pegar top 5 gêneros
+    const topGeneros = generos.slice(0, 5);
+    const maxQuantidade = Math.max(...topGeneros.map(g => g.quantidade));
+
+    let html = '<div class="grafico-barras">';
+
+    topGeneros.forEach(genero => {
+        const altura = maxQuantidade > 0 ? Math.round((genero.quantidade / maxQuantidade) * 150) : 0;
+        html += `
+            <div class="barra-genero" style="height: ${altura}px" title="${genero.quantidade} livros de ${genero.nome}">
+                <span class="barra-valor">${genero.quantidade}</span>
+                <span class="barra-label">${genero.nome.substring(0, 10)}${genero.nome.length > 10 ? '...' : ''}</span>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// NOVO: Filtrar livros por gênero (para a seção do perfil)
+function filtrarGeneros(genero) {
+    const container = document.getElementById('livrosPorGeneros');
+
+    if (genero === 'todos') {
+        atualizarFiltroGeneroPerfil();
+        return;
+    }
+
+    const livrosFiltrados = [];
+
+    // Livros HTML
+    const livrosHTML = document.querySelectorAll('#gradeLivrosRecentes .cartao-livro:not([data-id-js])');
+    livrosHTML.forEach(cartao => {
+        const titulo = cartao.querySelector('.titulo-livro, .detalhes-livro h6, h6')?.textContent || '';
+        const generoDetectado = detectarGeneroPorTitulo(titulo);
+        if (generoDetectado === genero) {
+            const autor = cartao.querySelector('.autor-livro, p')?.textContent || '';
+            const capa = cartao.querySelector('.capa-imagem')?.src || '';
+            livrosFiltrados.push({ titulo, autor, capa });
+        }
+    });
+
+    // Livros JS
+    livros.forEach(livro => {
+        if (livro.genero === genero || detectarGeneroPorTitulo(livro.titulo) === genero) {
+            livrosFiltrados.push({
+                titulo: livro.titulo,
+                autor: livro.autor,
+                capa: livro.coverUrl
+            });
+        }
+    });
+
+    if (livrosFiltrados.length === 0) {
+        container.innerHTML = `
+            <div class="sem-dados">
+                <i class="bi bi-book"></i>
+                <p>Nenhum livro encontrado para ${genero}</p>
+            </div>
+        `;
+        return;
+    }
+
+    let html = '<div class="genero-lista">';
+
+    livrosFiltrados.slice(0, 5).forEach(livro => {
+        html += `
+            <div class="genero-livro-item">
+                ${livro.capa && livro.capa !== '' ?
+            `<img src="${livro.capa}" alt="${livro.titulo}" class="genero-livro-capa">` :
+            `<div class="genero-livro-capa capa-padrao" style="width:40px;height:60px;font-size:0.7rem;">${livro.titulo.substring(0, 2)}</div>`
+        }
+                <div class="genero-livro-info">
+                    <h6>${livro.titulo.length > 20 ? livro.titulo.substring(0, 20) + '...' : livro.titulo}</h6>
+                    <span>${livro.autor}</span>
+                </div>
+            </div>
+        `;
+    });
+
+    if (livrosFiltrados.length > 5) {
+        html += `<div class="mais-livros">+ ${livrosFiltrados.length - 5} mais</div>`;
+    }
+
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// Restante das funções permanecem as mesmas...
 function editarBioUsuario() {
     const bioUsuario = document.getElementById('bioUsuario');
     const textoAtual = bioUsuario.textContent;
 
-    // Criar textarea para edição
     const textarea = document.createElement('textarea');
     textarea.value = textoAtual;
     textarea.className = 'form-control entrada-estilizada';
     textarea.rows = 3;
 
-    // Substituir o texto pela textarea
     bioUsuario.replaceWith(textarea);
     textarea.focus();
 
-    // Salvar quando perder o foco
     textarea.addEventListener('blur', function() {
         salvarBioUsuario(textarea.value);
     });
 
-    // Salvar com Enter (sem shift)
     textarea.addEventListener('keydown', function(e) {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -520,36 +709,29 @@ function editarBioUsuario() {
     });
 }
 
-// Salvar bio do usuário
 function salvarBioUsuario(novaBio) {
     const textarea = document.querySelector('textarea.entrada-estilizada');
     let bioUsuario = document.getElementById('bioUsuario');
 
     if (!bioUsuario && textarea) {
-        // Criar novo elemento se não existir
         bioUsuario = document.createElement('p');
         bioUsuario.id = 'bioUsuario';
         bioUsuario.className = 'bio-usuario';
         bioUsuario.textContent = novaBio || 'Apaixonado(a) por leitura! 📚';
-
         textarea.replaceWith(bioUsuario);
     } else if (bioUsuario) {
         bioUsuario.textContent = novaBio || 'Apaixonado(a) por leitura! 📚';
     }
 
-    // Salvar no localStorage
     let perfil = JSON.parse(localStorage.getItem('bookHubPerfil')) || {};
     perfil.bio = novaBio || 'Apaixonado(a) por leitura! 📚';
     localStorage.setItem('bookHubPerfil', JSON.stringify(perfil));
 }
 
-// Calcular estatísticas do perfil
 function calcularEstatisticasPerfil() {
-    // Contar todos os livros (HTML + JS)
     const livrosHTML = document.querySelectorAll('#gradeLivrosRecentes .cartao-livro:not([data-id-js])');
     const totalLivros = livrosHTML.length + livros.length;
 
-    // Contar livros lidos
     let livrosLidosHTML = 0;
     livrosHTML.forEach(cartao => {
         const etiqueta = cartao.querySelector('.etiqueta-status');
@@ -557,33 +739,28 @@ function calcularEstatisticasPerfil() {
             livrosLidosHTML++;
         }
     });
+
     const livrosLidosJS = livros.filter(l => l.statusFront === 'lido').length;
     const livrosLidos = livrosLidosHTML + livrosLidosJS;
 
-    // Calcular tempo médio (dias por livro) - exemplo: 15 dias por livro lido
     const tempoMedio = livrosLidos > 0 ? Math.round(365 / livrosLidos) : 0;
-
-    // Calcular avaliação média - exemplo: 4.2 estrelas
     const avaliacaoMedia = livrosLidos > 0 ? (4.2).toFixed(1) : '0.0';
 
-    // Atualizar exibição
     document.getElementById('tempoMedio').textContent = tempoMedio;
     document.getElementById('avaliacaoMedia').textContent = avaliacaoMedia;
     document.getElementById('totalLivrosPerfil').textContent = totalLivros;
     document.getElementById('livrosLidos').textContent = livrosLidos;
 
-    // Calcular páginas lidas (estimativa: 300 páginas por livro lido)
     const paginasLidas = livrosLidos * 300;
     document.getElementById('paginasLidas').textContent = paginasLidas.toLocaleString();
 
-    // Mês mais ativo (exemplo)
     document.getElementById('mesAtivo').textContent = 'Jan';
 
-    // Calcular progresso anual
     const perfil = JSON.parse(localStorage.getItem('bookHubPerfil')) || {};
     const metaAnual = perfil.metaAnual || 12;
     const progresso = Math.min(Math.round((livrosLidos / metaAnual) * 100), 100);
     const progressoAnual = document.getElementById('progressoAnual');
+
     if (progressoAnual) {
         progressoAnual.style.width = `${progresso}%`;
         progressoAnual.textContent = `${progresso}%`;
@@ -591,9 +768,7 @@ function calcularEstatisticasPerfil() {
     }
 }
 
-// Atualizar filtro por ano
 function atualizarFiltroAno() {
-    // Dados de exemplo para anos
     const anos = [
         { ano: '2024', quantidade: 8 },
         { ano: '2023', quantidade: 12 },
@@ -605,11 +780,10 @@ function atualizarFiltroAno() {
     const container = document.getElementById('livrosPorAno');
     if (!container) return;
 
-    // Criar gráfico de barras simples
     let html = '<div class="grafico-barras">';
 
     anos.forEach(item => {
-        const altura = Math.min(item.quantidade * 15, 150); // Máximo 150px
+        const altura = Math.min(item.quantidade * 15, 150);
         html += `
             <div class="barra-ano" style="height: ${altura}px" title="${item.quantidade} livros em ${item.ano}">
                 <span class="barra-valor">${item.quantidade}</span>
@@ -622,7 +796,6 @@ function atualizarFiltroAno() {
     container.innerHTML = html;
 }
 
-// Filtrar livros por ano
 function filtrarLivrosPorAno(ano) {
     const container = document.getElementById('livrosPorAno');
 
@@ -631,17 +804,28 @@ function filtrarLivrosPorAno(ano) {
         return;
     }
 
-    // Exemplo de dados para cada ano (em uma implementação real, isso viria do backend)
     const livrosExemplo = {
         '2024': [
-            { titulo: 'Heartstopper - Volume 5', autor: 'Alice Oseman', capa: 'imgs/Heartstopper5.jpg' },
-            { titulo: 'A Empregada - Livro 3', autor: 'Freida McFadden', capa: 'imgs/A Empregada 3.jpg' },
+            { titulo: 'Heartstopper - Volume 4', autor: 'Alice Oseman', capa: 'imgs/Heartstopper4.jpg' },
+            { titulo: 'A Empregada - Livro 2', autor: 'Freida McFadden', capa: 'imgs/A Empregada 2.jpg' },
             { titulo: 'Harry Potter e as Relíquias da Morte', autor: 'J.K. Rowling', capa: 'imgs/Harry7.jpg' }
         ],
-        '2025': [
-            { titulo: 'Livro Planejado 2025', autor: 'Autor Exemplo', capa: '' }
+        '2023': [
+            { titulo: 'Heartstopper - Volume 3', autor: 'Alice Oseman', capa: 'imgs/Heartstopper3.jpg' },
+            { titulo: 'A Empregada - Livro 1', autor: 'Freida McFadden', capa: 'imgs/A Empregada.jpg' },
         ],
-        '2026': [],
+        '2022': [
+            { titulo: 'Heartstopper - Volume 1', autor: 'Alice Oseman', capa: 'imgs/Heartstopper1.jpg' },
+            { titulo: 'Heartstopper - Volume 2', autor: 'Alice Oseman', capa: 'imgs/Heartstopper2.png' },
+        ],
+        '2025': [
+            { titulo: '13 Reasons Why', autor: 'Jay Asher', capa: 'imgs/13reasonswhy.jpg' },
+            { titulo: 'Heartstopper - Volume 5', autor: 'Alice Oseman', capa: 'imgs/Heartstopper5.jpg' },
+        ],
+        '2026': [
+            { titulo: 'Harry Potter e o Cálice de Fogo', autor: 'J.K. Rowling', capa: 'imgs/Harry4.jpg' },
+            { titulo: 'Harry Potter e a Ordem da Fênix', autor: 'J.K. Rowling', capa: 'imgs/Harry5.jpg' },
+        ],
         'anteriores': [
             { titulo: 'Harry Potter e a Pedra Filosofal', autor: 'J.K. Rowling', capa: 'imgs/Harry1.jpg' },
             { titulo: 'Harry Potter e a Câmara Secreta', autor: 'J.K. Rowling', capa: 'imgs/Harry2.jpg' },
@@ -682,7 +866,6 @@ function filtrarLivrosPorAno(ano) {
     container.innerHTML = html;
 }
 
-// Renderizar gêneros preferidos
 function renderizarGeneros(generos) {
     const container = document.getElementById('generosPreferidos');
 
@@ -700,10 +883,8 @@ function renderizarGeneros(generos) {
 
     let html = '';
 
-    // Ordenar por quantidade (do maior para o menor)
     generos.sort((a, b) => b.quantidade - a.quantidade);
 
-    // Pegar os top 6 gêneros
     generos.slice(0, 6).forEach(genero => {
         html += `
             <div class="genero-tag">
@@ -716,7 +897,6 @@ function renderizarGeneros(generos) {
     container.innerHTML = html;
 }
 
-// Detectar gêneros automaticamente (baseado nos títulos)
 function detectarGenerosLivros() {
     const generosComuns = {
         'Fantasia': ['Harry Potter', 'Senhor dos Anéis', 'magia', 'feiticeiro', 'dragão', 'fantasia'],
@@ -731,14 +911,12 @@ function detectarGenerosLivros() {
 
     const contadorGeneros = {};
 
-    // Contar livros do HTML
     const livrosHTML = document.querySelectorAll('#gradeLivrosRecentes .cartao-livro:not([data-id-js])');
 
     livrosHTML.forEach(cartao => {
         const tituloElement = cartao.querySelector('.detalhes-livro h6, .titulo-livro, h6');
         if (tituloElement) {
             const titulo = tituloElement.textContent.toLowerCase();
-
             for (const [genero, palavras] of Object.entries(generosComuns)) {
                 for (const palavra of palavras) {
                     if (titulo.includes(palavra.toLowerCase())) {
@@ -750,10 +928,8 @@ function detectarGenerosLivros() {
         }
     });
 
-    // Contar livros do JS
     livros.forEach(livro => {
         const titulo = livro.titulo.toLowerCase();
-
         for (const [genero, palavras] of Object.entries(generosComuns)) {
             for (const palavra of palavras) {
                 if (titulo.includes(palavra.toLowerCase())) {
@@ -764,28 +940,25 @@ function detectarGenerosLivros() {
         }
     });
 
-    // Converter para array
     const generosArray = Object.entries(contadorGeneros).map(([nome, quantidade]) => ({
         nome,
         quantidade
     }));
 
-    // Salvar no perfil
     let perfil = JSON.parse(localStorage.getItem('bookHubPerfil')) || {};
     perfil.generos = generosArray;
     localStorage.setItem('bookHubPerfil', JSON.stringify(perfil));
 
-    // Renderizar
     renderizarGeneros(generosArray);
 
     return generosArray;
 }
 
-// Atualizar todas as estatísticas (livros + perfil)
 function atualizarTodasEstatisticas() {
     atualizarEstatisticas();
     calcularEstatisticasPerfil();
     detectarGenerosLivros();
+    atualizarFiltroGeneroPerfil(); // NOVO: Atualizar gráfico de gêneros
 }
 
 console.log('Book Hub iniciado com sucesso! Perfil do usuário carregado.');

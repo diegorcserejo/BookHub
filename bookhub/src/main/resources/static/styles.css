@@ -527,6 +527,7 @@ body {
         padding: 15px;
     }
 }
+
 /* DESTAQUE: TÍTULO E AUTOR COM CORES DIFERENTES - CORRIGIDO */
 .detalhes-livro {
     padding: 5px;
@@ -619,7 +620,10 @@ body {
     color: white;
 }
 
-/* PERFIL DO USUÁRIO */
+/* ============================================
+   PERFIL DO USUÁRIO
+   ============================================ */
+
 .perfil-usuario {
     text-align: center;
     padding: 20px;
@@ -1007,4 +1011,369 @@ body {
 
 .cartao-livro {
     animation: fadeIn 0.3s ease-out;
+}
+
+/* ============================================
+   FILTROS DE GÊNERO
+   ============================================ */
+
+.filtros-container {
+    margin-bottom: 25px;
+}
+
+.filtros-genero {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 15px;
+    border: 1px solid #e9ecef;
+}
+
+.filtros-genero h6 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--texto-principal);
+    margin: 0 0 10px 0;
+}
+
+.filtros-genero-botoes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.filtro-genero {
+    padding: 6px 12px;
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 20px;
+    color: var(--texto-secundario);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.85rem;
+    display: inline-block;
+}
+
+.filtro-genero:hover {
+    border-color: var(--cor-navbar);
+    color: var(--cor-navbar);
+}
+
+.filtro-genero.active {
+    background: var(--cor-navbar);
+    color: white;
+    border-color: var(--cor-navbar);
+}
+
+/* Gêneros nas tags dos livros */
+.genero-livro {
+    display: inline-block;
+    padding: 2px 8px;
+    background: rgba(108, 92, 231, 0.1);
+    color: var(--cor-navbar);
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin-top: 5px;
+}
+
+/* Filtros de gênero no perfil */
+.filtro-genero-opcoes {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.filtro-genero-btn {
+    padding: 6px 12px;
+    background: var(--cor-fundo);
+    border: 2px solid transparent;
+    border-radius: 20px;
+    color: var(--texto-secundario);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.85rem;
+}
+
+.filtro-genero-btn:hover,
+.filtro-genero-btn.active {
+    background: var(--cor-navbar);
+    color: white;
+    border-color: var(--cor-navbar);
+}
+
+/* Gráfico de gêneros */
+.livros-por-generos {
+    min-height: 200px;
+    padding: 10px 0;
+}
+
+.barra-genero {
+    flex: 1;
+    background: linear-gradient(to top, #6c5ce7, #a29bfe);
+    border-radius: 5px 5px 0 0;
+    position: relative;
+    min-height: 20px;
+    transition: height 0.3s ease;
+    margin: 0 2px;
+}
+
+.barra-genero:hover {
+    opacity: 0.8;
+    transform: scale(1.05);
+}
+
+/* Lista de livros por gênero */
+.genero-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.genero-livro-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.genero-livro-item:hover {
+    background: #e9ecef;
+    transform: translateX(5px);
+}
+
+.genero-livro-capa {
+    width: 45px;
+    height: 65px;
+    border-radius: 6px;
+    object-fit: cover;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.genero-livro-info h6 {
+    font-size: 0.9rem;
+    margin: 0 0 4px 0;
+    color: var(--texto-principal);
+    font-weight: 600;
+}
+
+.genero-livro-info span {
+    font-size: 0.8rem;
+    color: var(--texto-secundario);
+}
+
+.mais-livros {
+    text-align: center;
+    padding: 10px;
+    color: var(--cor-navbar);
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    background: rgba(108, 92, 231, 0.1);
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.mais-livros:hover {
+    background: rgba(108, 92, 231, 0.2);
+}
+
+/* Responsividade para filtros */
+@media (max-width: 768px) {
+    .filtros-genero-botoes,
+    .filtro-genero-opcoes {
+        gap: 5px;
+    }
+
+    .filtro-genero,
+    .filtro-genero-btn {
+        padding: 5px 10px;
+        font-size: 0.8rem;
+    }
+
+    .filtros-genero {
+        padding: 12px;
+    }
+
+    .genero-livro-item {
+        padding: 8px;
+    }
+
+    .genero-livro-capa {
+        width: 35px;
+        height: 50px;
+    }
+}
+
+/* Estilos para o select de gênero no modal */
+select.entrada-estilizada {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%236c5ce7' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    background-size: 16px;
+    padding-right: 40px;
+}
+
+select.entrada-estilizada:focus {
+    border-color: var(--cor-navbar);
+    box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+}
+
+/* Indicador visual quando filtro está ativo */
+.filtro-ativo-indicador {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: var(--cor-navbar);
+    border-radius: 50%;
+    margin-left: 5px;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(108, 92, 231, 0.7);
+    }
+
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 5px rgba(108, 92, 231, 0);
+    }
+
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(108, 92, 231, 0);
+    }
+}
+
+/* Contador de livros filtrados */
+.contador-filtro {
+    font-size: 0.8rem;
+    color: var(--texto-secundario);
+    margin-left: 5px;
+    background: rgba(0,0,0,0.05);
+    padding: 1px 6px;
+    border-radius: 10px;
+}
+
+/* Badge para gênero nos cartões de livro */
+.badge-genero {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--cor-navbar);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    backdrop-filter: blur(5px);
+    z-index: 1;
+}
+
+/* Efeito de destaque para livros com filtro ativo */
+.cartao-livro.filtro-ativo {
+    box-shadow: 0 0 0 3px var(--cor-navbar);
+    transform: scale(1.02);
+}
+
+/* Estilo para mensagem quando não há livros no filtro */
+.sem-livros-filtro {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 40px 20px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 20px;
+    margin: 20px 0;
+}
+
+.sem-livros-filtro i {
+    font-size: 3rem;
+    color: #b2bec3;
+    margin-bottom: 15px;
+}
+
+.sem-livros-filtro h5 {
+    color: var(--texto-secundario);
+    margin-bottom: 10px;
+}
+
+.sem-livros-filtro p {
+    color: #95a5a6;
+    font-size: 0.9rem;
+}
+
+/* Botão para limpar filtros */
+.btn-limpar-filtros {
+    background: transparent;
+    border: 2px solid #e74c3c;
+    color: #e74c3c;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-left: 10px;
+}
+
+.btn-limpar-filtros:hover {
+    background: #e74c3c;
+    color: white;
+}
+
+/* Animações para filtros */
+@keyframes slideInFiltro {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.filtros-genero {
+    animation: slideInFiltro 0.3s ease-out;
+}
+
+/* Estilo para múltiplos filtros ativos */
+.multi-filtro-ativo {
+    background: linear-gradient(135deg, #6c5ce7, #fd79a8);
+    color: white;
+}
+
+/* Ajustes para telas muito pequenas */
+@media (max-width: 576px) {
+    .filtros-genero-botoes {
+        gap: 4px;
+    }
+
+    .filtro-genero {
+        padding: 4px 8px;
+        font-size: 0.75rem;
+    }
+
+    .badge-genero {
+        top: 5px;
+        left: 5px;
+        font-size: 0.6rem;
+        padding: 1px 6px;
+    }
+
+    .filtros-container {
+        margin-bottom: 15px;
+    }
+}
+
+/* Estilo para o seletor de gênero */
+select.entrada-estilizada option {
+    padding: 10px;
 }
