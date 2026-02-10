@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
     inicializarLivros();
     atualizarEstatisticas();
     adicionarFiltros();
+    inicializarPerfilUsuario(); // NOVO: Inicializar perfil
 });
 
 function inicializarLivros() {
@@ -82,6 +83,7 @@ function mudarStatusLivroHTML(etiqueta) {
 
     // Atualizar estatísticas
     atualizarEstatisticas();
+    atualizarTodasEstatisticas(); // NOVO: Atualizar estatísticas do perfil também
 }
 
 // Configurar eventos
@@ -255,6 +257,7 @@ function adicionarLivro(livro) {
     salvarNoLocalStorage();
     atualizarEstatisticas();
     renderizarNovosLivros();
+    atualizarTodasEstatisticas(); // NOVO: Atualizar estatísticas do perfil
 }
 
 function mudarStatusLivroJS(id) {
@@ -278,6 +281,7 @@ function mudarStatusLivroJS(id) {
     salvarNoLocalStorage();
     atualizarEstatisticas();
     renderizarNovosLivros();
+    atualizarTodasEstatisticas(); // NOVO: Atualizar estatísticas do perfil
 }
 
 function removerLivroJS(id) {
@@ -287,6 +291,7 @@ function removerLivroJS(id) {
         salvarNoLocalStorage();
         atualizarEstatisticas();
         renderizarNovosLivros();
+        atualizarTodasEstatisticas(); // NOVO: Atualizar estatísticas do perfil
     }
 }
 
@@ -386,11 +391,401 @@ function atualizarEstatisticas() {
     const total = totalHTML + livros.length;
     const lendoTotal = lendoHTML + lendoJS;
     const desejadoTotal = desejadoHTML + desejadoJS;
+    const emprestadoTotal = emprestadoHTML + emprestadoJS;
 
     document.getElementById('totalLivros').textContent = total;
     document.getElementById('lendoAgora').textContent = lendoTotal;
     document.getElementById('listaDesejos').textContent = desejadoTotal;
-    document.getElementById('emprestimosAtivos').textContent = '0';
+    document.getElementById('emprestimosAtivos').textContent = emprestadoTotal;
 }
 
-console.log('Book Hub iniciado com sucesso! Mantendo livros do HTML intactos.');
+// ============================================
+// FUNÇÕES DO PERFIL DO USUÁRIO
+// ============================================
+
+// Inicializar perfil do usuário
+function inicializarPerfilUsuario() {
+    // Carregar dados do perfil do localStorage
+    carregarDadosPerfil();
+
+    // Configurar eventos do perfil
+    configurarEventosPerfil();
+
+    // Calcular estatísticas do perfil
+    calcularEstatisticasPerfil();
+
+    // Atualizar filtro por ano
+    atualizarFiltroAno();
+
+    // Detectar gêneros preferidos
+    detectarGenerosLivros();
+}
+
+// Carregar dados do perfil
+function carregarDadosPerfil() {
+    const perfilSalvo = localStorage.getItem('bookHubPerfil');
+
+    if (perfilSalvo) {
+        const perfil = JSON.parse(perfilSalvo);
+
+        // Atualizar bio se existir
+        if (perfil.bio) {
+            document.getElementById('bioUsuario').textContent = perfil.bio;
+        }
+
+        // Atualizar meta anual se existir
+        if (perfil.metaAnual) {
+            document.getElementById('metaAnual').textContent = perfil.metaAnual;
+        }
+
+        // Atualizar gêneros se existirem
+        if (perfil.generos && perfil.generos.length > 0) {
+            renderizarGeneros(perfil.generos);
+        }
+    } else {
+        // Criar perfil padrão se não existir
+        const perfilPadrao = {
+            bio: 'Apaixonado(a) por leitura! 📚',
+            metaAnual: 12,
+            generos: []
+        };
+        localStorage.setItem('bookHubPerfil', JSON.stringify(perfilPadrao));
+        document.getElementById('bioUsuario').textContent = perfilPadrao.bio;
+        document.getElementById('metaAnual').textContent = perfilPadrao.metaAnual;
+    }
+}
+
+// Configurar eventos do perfil
+function configurarEventosPerfil() {
+    // Botão de editar bio
+    const btnEditarBio = document.getElementById('btnEditarBio');
+    const bioUsuario = document.getElementById('bioUsuario');
+
+    if (btnEditarBio && bioUsuario) {
+        btnEditarBio.addEventListener('click', function() {
+            editarBioUsuario();
+        });
+
+        bioUsuario.addEventListener('click', function() {
+            editarBioUsuario();
+        });
+    }
+
+    // Botões de filtro por ano
+    document.querySelectorAll('.filtro-ano-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.filtro-ano-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            const anoSelecionado = this.dataset.ano;
+            filtrarLivrosPorAno(anoSelecionado);
+        });
+    });
+
+    // Botão de alterar foto
+    const btnAlterarFoto = document.querySelector('.btn-alterar-foto');
+    if (btnAlterarFoto) {
+        btnAlterarFoto.addEventListener('click', function() {
+            // Em uma implementação real, você abriria um seletor de arquivos
+            alert('Funcionalidade de alterar foto será implementada em breve!');
+        });
+    }
+}
+
+// Editar bio do usuário
+function editarBioUsuario() {
+    const bioUsuario = document.getElementById('bioUsuario');
+    const textoAtual = bioUsuario.textContent;
+
+    // Criar textarea para edição
+    const textarea = document.createElement('textarea');
+    textarea.value = textoAtual;
+    textarea.className = 'form-control entrada-estilizada';
+    textarea.rows = 3;
+
+    // Substituir o texto pela textarea
+    bioUsuario.replaceWith(textarea);
+    textarea.focus();
+
+    // Salvar quando perder o foco
+    textarea.addEventListener('blur', function() {
+        salvarBioUsuario(textarea.value);
+    });
+
+    // Salvar com Enter (sem shift)
+    textarea.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            salvarBioUsuario(textarea.value);
+        }
+    });
+}
+
+// Salvar bio do usuário
+function salvarBioUsuario(novaBio) {
+    const textarea = document.querySelector('textarea.entrada-estilizada');
+    let bioUsuario = document.getElementById('bioUsuario');
+
+    if (!bioUsuario && textarea) {
+        // Criar novo elemento se não existir
+        bioUsuario = document.createElement('p');
+        bioUsuario.id = 'bioUsuario';
+        bioUsuario.className = 'bio-usuario';
+        bioUsuario.textContent = novaBio || 'Apaixonado(a) por leitura! 📚';
+
+        textarea.replaceWith(bioUsuario);
+    } else if (bioUsuario) {
+        bioUsuario.textContent = novaBio || 'Apaixonado(a) por leitura! 📚';
+    }
+
+    // Salvar no localStorage
+    let perfil = JSON.parse(localStorage.getItem('bookHubPerfil')) || {};
+    perfil.bio = novaBio || 'Apaixonado(a) por leitura! 📚';
+    localStorage.setItem('bookHubPerfil', JSON.stringify(perfil));
+}
+
+// Calcular estatísticas do perfil
+function calcularEstatisticasPerfil() {
+    // Contar todos os livros (HTML + JS)
+    const livrosHTML = document.querySelectorAll('#gradeLivrosRecentes .cartao-livro:not([data-id-js])');
+    const totalLivros = livrosHTML.length + livros.length;
+
+    // Contar livros lidos
+    let livrosLidosHTML = 0;
+    livrosHTML.forEach(cartao => {
+        const etiqueta = cartao.querySelector('.etiqueta-status');
+        if (etiqueta && etiqueta.className.includes('lido')) {
+            livrosLidosHTML++;
+        }
+    });
+    const livrosLidosJS = livros.filter(l => l.statusFront === 'lido').length;
+    const livrosLidos = livrosLidosHTML + livrosLidosJS;
+
+    // Calcular tempo médio (dias por livro) - exemplo: 15 dias por livro lido
+    const tempoMedio = livrosLidos > 0 ? Math.round(365 / livrosLidos) : 0;
+
+    // Calcular avaliação média - exemplo: 4.2 estrelas
+    const avaliacaoMedia = livrosLidos > 0 ? (4.2).toFixed(1) : '0.0';
+
+    // Atualizar exibição
+    document.getElementById('tempoMedio').textContent = tempoMedio;
+    document.getElementById('avaliacaoMedia').textContent = avaliacaoMedia;
+    document.getElementById('totalLivrosPerfil').textContent = totalLivros;
+    document.getElementById('livrosLidos').textContent = livrosLidos;
+
+    // Calcular páginas lidas (estimativa: 300 páginas por livro lido)
+    const paginasLidas = livrosLidos * 300;
+    document.getElementById('paginasLidas').textContent = paginasLidas.toLocaleString();
+
+    // Mês mais ativo (exemplo)
+    document.getElementById('mesAtivo').textContent = 'Jan';
+
+    // Calcular progresso anual
+    const perfil = JSON.parse(localStorage.getItem('bookHubPerfil')) || {};
+    const metaAnual = perfil.metaAnual || 12;
+    const progresso = Math.min(Math.round((livrosLidos / metaAnual) * 100), 100);
+    const progressoAnual = document.getElementById('progressoAnual');
+    if (progressoAnual) {
+        progressoAnual.style.width = `${progresso}%`;
+        progressoAnual.textContent = `${progresso}%`;
+        document.getElementById('metaAnual').textContent = metaAnual;
+    }
+}
+
+// Atualizar filtro por ano
+function atualizarFiltroAno() {
+    // Dados de exemplo para anos
+    const anos = [
+        { ano: '2024', quantidade: 8 },
+        { ano: '2023', quantidade: 12 },
+        { ano: '2022', quantidade: 10 },
+        { ano: '2021', quantidade: 6 },
+        { ano: '2020', quantidade: 4 }
+    ];
+
+    const container = document.getElementById('livrosPorAno');
+    if (!container) return;
+
+    // Criar gráfico de barras simples
+    let html = '<div class="grafico-barras">';
+
+    anos.forEach(item => {
+        const altura = Math.min(item.quantidade * 15, 150); // Máximo 150px
+        html += `
+            <div class="barra-ano" style="height: ${altura}px" title="${item.quantidade} livros em ${item.ano}">
+                <span class="barra-valor">${item.quantidade}</span>
+                <span class="barra-label">${item.ano}</span>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// Filtrar livros por ano
+function filtrarLivrosPorAno(ano) {
+    const container = document.getElementById('livrosPorAno');
+
+    if (ano === 'todos') {
+        atualizarFiltroAno();
+        return;
+    }
+
+    // Exemplo de dados para cada ano (em uma implementação real, isso viria do backend)
+    const livrosExemplo = {
+        '2024': [
+            { titulo: 'Heartstopper - Volume 5', autor: 'Alice Oseman', capa: 'imgs/Heartstopper5.jpg' },
+            { titulo: 'A Empregada - Livro 3', autor: 'Freida McFadden', capa: 'imgs/A Empregada 3.jpg' },
+            { titulo: 'Harry Potter e as Relíquias da Morte', autor: 'J.K. Rowling', capa: 'imgs/Harry7.jpg' }
+        ],
+        '2025': [
+            { titulo: 'Livro Planejado 2025', autor: 'Autor Exemplo', capa: '' }
+        ],
+        '2026': [],
+        'anteriores': [
+            { titulo: 'Harry Potter e a Pedra Filosofal', autor: 'J.K. Rowling', capa: 'imgs/Harry1.jpg' },
+            { titulo: 'Harry Potter e a Câmara Secreta', autor: 'J.K. Rowling', capa: 'imgs/Harry2.jpg' },
+            { titulo: 'Harry Potter e o Prisioneiro de Azkaban', autor: 'J.K. Rowling', capa: 'imgs/Harry3.jpg' }
+        ]
+    };
+
+    const livrosAno = livrosExemplo[ano] || [];
+
+    if (livrosAno.length === 0) {
+        container.innerHTML = `
+            <div class="sem-dados">
+                <i class="bi bi-calendar-x"></i>
+                <p>Nenhum livro encontrado para ${ano}</p>
+            </div>
+        `;
+        return;
+    }
+
+    let html = '<div class="ano-lista">';
+
+    livrosAno.forEach(livro => {
+        html += `
+            <div class="ano-livro-item">
+                ${livro.capa ?
+            `<img src="${livro.capa}" alt="${livro.titulo}" class="ano-livro-capa">` :
+            `<div class="ano-livro-capa capa-padrao" style="width:40px;height:60px;font-size:0.7rem;">${livro.titulo.substring(0, 2)}</div>`
+        }
+                <div class="ano-livro-info">
+                    <h6>${livro.titulo.length > 20 ? livro.titulo.substring(0, 20) + '...' : livro.titulo}</h6>
+                    <span>${livro.autor}</span>
+                </div>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// Renderizar gêneros preferidos
+function renderizarGeneros(generos) {
+    const container = document.getElementById('generosPreferidos');
+
+    if (!container) return;
+
+    if (!generos || generos.length === 0) {
+        container.innerHTML = `
+            <div class="sem-dados">
+                <i class="bi bi-info-circle"></i>
+                <p>Adicione livros para ver suas preferências</p>
+            </div>
+        `;
+        return;
+    }
+
+    let html = '';
+
+    // Ordenar por quantidade (do maior para o menor)
+    generos.sort((a, b) => b.quantidade - a.quantidade);
+
+    // Pegar os top 6 gêneros
+    generos.slice(0, 6).forEach(genero => {
+        html += `
+            <div class="genero-tag">
+                <span>${genero.nome}</span>
+                <span class="contador">${genero.quantidade}</span>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+// Detectar gêneros automaticamente (baseado nos títulos)
+function detectarGenerosLivros() {
+    const generosComuns = {
+        'Fantasia': ['Harry Potter', 'Senhor dos Anéis', 'magia', 'feiticeiro', 'dragão', 'fantasia'],
+        'Romance': ['Heartstopper', 'amor', 'coração', 'paixão', 'romance', 'relacionamento'],
+        'Suspense': ['Empregada', 'segredo', 'mistério', 'thriller', 'suspense', 'crime'],
+        'Drama': ['13 Reasons Why', 'drama', 'vida', 'emoção', 'dramático', 'conflito'],
+        'Biografia': ['mãe morreu', 'biografia', 'memórias', 'autobiografia', 'vida real'],
+        'Young Adult': ['adolescente', 'jovem', 'escola', 'YA', 'juventude', 'crescimento'],
+        'Ficção': ['ficção', 'narrativa', 'história', 'literatura'],
+        'Aventura': ['aventura', 'viagem', 'exploração', 'ação']
+    };
+
+    const contadorGeneros = {};
+
+    // Contar livros do HTML
+    const livrosHTML = document.querySelectorAll('#gradeLivrosRecentes .cartao-livro:not([data-id-js])');
+
+    livrosHTML.forEach(cartao => {
+        const tituloElement = cartao.querySelector('.detalhes-livro h6, .titulo-livro, h6');
+        if (tituloElement) {
+            const titulo = tituloElement.textContent.toLowerCase();
+
+            for (const [genero, palavras] of Object.entries(generosComuns)) {
+                for (const palavra of palavras) {
+                    if (titulo.includes(palavra.toLowerCase())) {
+                        contadorGeneros[genero] = (contadorGeneros[genero] || 0) + 1;
+                        break;
+                    }
+                }
+            }
+        }
+    });
+
+    // Contar livros do JS
+    livros.forEach(livro => {
+        const titulo = livro.titulo.toLowerCase();
+
+        for (const [genero, palavras] of Object.entries(generosComuns)) {
+            for (const palavra of palavras) {
+                if (titulo.includes(palavra.toLowerCase())) {
+                    contadorGeneros[genero] = (contadorGeneros[genero] || 0) + 1;
+                    break;
+                }
+            }
+        }
+    });
+
+    // Converter para array
+    const generosArray = Object.entries(contadorGeneros).map(([nome, quantidade]) => ({
+        nome,
+        quantidade
+    }));
+
+    // Salvar no perfil
+    let perfil = JSON.parse(localStorage.getItem('bookHubPerfil')) || {};
+    perfil.generos = generosArray;
+    localStorage.setItem('bookHubPerfil', JSON.stringify(perfil));
+
+    // Renderizar
+    renderizarGeneros(generosArray);
+
+    return generosArray;
+}
+
+// Atualizar todas as estatísticas (livros + perfil)
+function atualizarTodasEstatisticas() {
+    atualizarEstatisticas();
+    calcularEstatisticasPerfil();
+    detectarGenerosLivros();
+}
+
+console.log('Book Hub iniciado com sucesso! Perfil do usuário carregado.');

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Book Hub</title>
+    <title>BookHub</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
@@ -15,7 +15,7 @@
     <nav class="navbar barra-navegacao-estilizada">
         <div class="container-fluid d-flex justify-content-between align-items-center">
             <a class="navbar-brand texto-branco" href="#">
-                <i class="bi bi-book-half"></i> <span>Book Hub</span>
+                <i class="bi bi-book-half"></i> <span>BookHub</span>
             </a>
 
             <div class="acoes-topo">
@@ -294,7 +294,193 @@
     </div>
 </div>
 
+<!-- Perfil do usuário -->
+<div class="row mt-5">
+    <div class="col-lg-4">
+        <div class="painel-dashboard">
+            <div class="painel-cabecalho">
+                <h3><i class="bi bi-person-circle"></i> Meu Perfil</h3>
+            </div>
+            <div class="painel-corpo">
+                <div class="perfil-usuario">
+                    <div class="foto-perfil-container">
+                        <div class="foto-perfil-placeholder">
+                            <i class="bi bi-person-fill"></i>
+                        </div>
+                        <button class="btn-alterar-foto">
+                            <i class="bi bi-camera"></i>
+                        </button>
+                    </div>
+
+                    <div class="info-perfil mt-3">
+                        <h5 class="nome-usuario">Leitor(a)</h5>
+                        <p class="bio-usuario" id="bioUsuario">Clique para editar sua bio...</p>
+                        <button class="btn-editar-bio" id="btnEditarBio">
+                            <i class="bi bi-pencil"></i> Editar Bio
+                        </button>
+                    </div>
+
+                    <div class="dados-leitura mt-4">
+                        <div class="dado-leitura">
+                            <i class="bi bi-clock-history"></i>
+                            <div>
+                                <span class="valor-dado" id="tempoMedio">0</span>
+                                <span class="label-dado">dias/livro</span>
+                            </div>
+                        </div>
+                        <div class="dado-leitura">
+                            <i class="bi bi-star-fill"></i>
+                            <div>
+                                <span class="valor-dado" id="avaliacaoMedia">0</span>
+                                <span class="label-dado">estrelas</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gêneros Preferidos -->
+        <div class="painel-dashboard mt-4">
+            <div class="painel-cabecalho">
+                <h3><i class="bi bi-tags"></i> Gêneros Preferidos</h3>
+            </div>
+            <div class="painel-corpo">
+                <div class="generos-container" id="generosPreferidos">
+                    <!-- Gêneros serão carregados dinamicamente -->
+                    <div class="sem-dados">
+                        <i class="bi bi-info-circle"></i>
+                        <p>Adicione livros com gêneros para ver suas preferências</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <!-- Filtro por Ano -->
+        <div class="painel-dashboard">
+            <div class="painel-cabecalho">
+                <h3><i class="bi bi-calendar"></i> Filtro por Ano</h3>
+            </div>
+            <div class="painel-corpo">
+                <div class="filtro-ano-container">
+                    <div class="filtro-ano-opcoes">
+                        <button class="filtro-ano-btn active" data-ano="todos">
+                            Todos os Anos
+                        </button>
+                        <button class="filtro-ano-btn" data-ano="2024">
+                            2024
+                        </button>
+                        <button class="filtro-ano-btn" data-ano="2025">
+                            2025
+                        </button>
+                        <button class="filtro-ano-btn" data-ano="2026">
+                            2026
+                        </button>
+                        <button class="filtro-ano-btn" data-ano="anteriores">
+                            Anteriores
+                        </button>
+                    </div>
+
+                    <div class="livros-por-ano" id="livrosPorAno">
+                        <!-- Gráfico/Lista será carregado dinamicamente -->
+                        <div class="sem-dados">
+                            <i class="bi bi-calendar-x"></i>
+                            <p>Selecione um ano para ver os livros</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="painel-dashboard mt-4">
+            <div class="painel-cabecalho">
+                <h3><i class="bi bi-graph-up"></i> Estatísticas Detalhadas</h3>
+            </div>
+            <div class="painel-corpo">
+                <div class="estatisticas-detalhadas">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="estatistica-item">
+                                <div class="icone-estatistica">
+                                    <i class="bi bi-book"></i>
+                                </div>
+                                <div class="info-estatistica">
+                                    <h4 id="totalLivrosPerfil">0</h4>
+                                    <p>Total de Livros</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="estatistica-item">
+                                <div class="icone-estatistica">
+                                    <i class="bi bi-check-circle"></i>
+                                </div>
+                                <div class="info-estatistica">
+                                    <h4 id="livrosLidos">0</h4>
+                                    <p>Livros Lidos</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="estatistica-item">
+                                <div class="icone-estatistica">
+                                    <i class="bi bi-hourglass-split"></i>
+                                </div>
+                                <div class="info-estatistica">
+                                    <h4 id="paginasLidas">0</h4>
+                                    <p>Páginas Lidas</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="estatistica-item">
+                                <div class="icone-estatistica">
+                                    <i class="bi bi-calendar-check"></i>
+                                </div>
+                                <div class="info-estatistica">
+                                    <h4 id="mesAtivo">Jan</h4>
+                                    <p>Mês Mais Ativo</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="progresso-anual mt-4">
+                        <h6>Progresso Anual 2024</h6>
+                        <div class="progress">
+                            <div class="progress-bar" id="progressoAnual" role="progressbar"
+                                 style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                0%
+                            </div>
+                        </div>
+                        <small class="text-muted">Meta: <span id="metaAnual">12</span> livros/ano</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="app.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+
+
+<!-- IDEIAS
+
+1.Perfil do Usuário
+Adicionar foto, bio, Filtro de Livros lidos em 2024, 2025, 2026 antes e assim por diante
+Estatísticas pessoais: total de livros, tempo médio por livro, gêneros preferidos..
+
+2.Conectar com Google Books ou Open Library para buscar capas, sinopses e ISBN automaticamente.
+
+3.Sistema de empréstimo entre amigos com data de devolução e lembretes.
+Histórico de empréstimos.
+
+4. Permitir notas (1–5 estrelas) e resenhas para cada livro.
+Seção de comentários nos perfis dos amigos.
+
+5. Busca de filtro por título, autor, gênero, ano. -->
