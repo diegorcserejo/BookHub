@@ -16,10 +16,6 @@ public class Amigo {
     private String email;
     private String phone;
 
-    // REMOVIDO O RELACIONAMENTO PROBLEMÁTICO
-    // @OneToMany(mappedBy = "amigo")
-    // private Set<Loan> loans = new HashSet<>();
-
     public Amigo() {}
 
     public Long getId() {

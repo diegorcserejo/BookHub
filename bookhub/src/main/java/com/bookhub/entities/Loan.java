@@ -19,15 +19,6 @@ public class Loan {
     @Enumerated(EnumType.STRING)
     private LoanStatus status;
 
-    // RELACIONAMENTOS COMENTADOS TEMPORARIAMENTE
-    // @ManyToOne
-    // @JoinColumn(name = "livro_id")
-    // private Livro livro;
-    //
-    // @ManyToOne
-    // @JoinColumn(name = "amigo_id")
-    // private Amigo amigo;
-
     private String notes;
 
     public Loan() {}

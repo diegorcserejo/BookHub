@@ -36,16 +36,6 @@ public class Livro {
     private LocalDate finishDate;
     private String notes;
 
-    // RELACIONAMENTOS COMENTADOS TEMPORARIAMENTE
-    // @ManyToMany
-    // @JoinTable(name = "tb_livro_genero",
-    //         joinColumns = @JoinColumn(name = "livro_id"),
-    //         inverseJoinColumns = @JoinColumn(name = "genero_id"))
-    // private Set<Genero> generos = new HashSet<>();
-    //
-    // @OneToMany(mappedBy = "livro")
-    // private Set<Loan> loans = new HashSet<>();
-
     public Livro() {}
 
     public Long getId() {

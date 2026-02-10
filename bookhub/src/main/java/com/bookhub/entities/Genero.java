@@ -17,10 +17,6 @@ public class Genero {
 
     private String color;
 
-    // RELACIONAMENTO COMENTADO TEMPORARIAMENTE
-    // @ManyToMany(mappedBy = "generos")
-    // private Set<Livro> livros = new HashSet<>();
-
     public Genero() {}
 
     public Long getId() {

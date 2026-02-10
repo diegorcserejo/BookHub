@@ -1,16 +1,13 @@
-// Configurações
 let livros = [];
 let statusSelecionado = 'todos';
 
-// Mapeamento de status
 const statusMap = {
     'WANT_TO_READ': { front: 'desejado', label: 'Desejado', color: 'desejado' },
     'READING': { front: 'lendo', label: 'Lendo', color: 'lendo' },
     'READ': { front: 'lido', label: 'Lido', color: 'lido' },
-    'ABANDONED': { front: 'abandonado', label: 'Abandonado', color: 'abandonado' }
+    'BORROWED': { front: 'emprestado', label: 'Emprestado', color: 'emprestado' }
 };
 
-// Inicializar a aplicação
 document.addEventListener('DOMContentLoaded', function() {
     inicializarEventos();
     inicializarLivros();
@@ -18,32 +15,26 @@ document.addEventListener('DOMContentLoaded', function() {
     adicionarFiltros();
 });
 
-// Inicializar livros mantendo os do HTML
 function inicializarLivros() {
-    // Carregar livros do localStorage (novos livros adicionados)
     const livrosSalvos = localStorage.getItem('bookHubLivrosNovos');
 
     if (livrosSalvos) {
         livros = JSON.parse(livrosSalvos);
 
-        // Renderizar APENAS os novos livros (adicionados pelo JS)
         renderizarNovosLivros();
     } else {
         livros = [];
     }
 
-    // Adicionar controles aos livros do HTML
     adicionarControlesLivrosHTML();
 }
 
-// Adicionar controles aos livros do HTML
 function adicionarControlesLivrosHTML() {
     const livrosHTML = document.querySelectorAll('#gradeLivrosRecentes .cartao-livro:not([data-id-js])');
 
     livrosHTML.forEach(cartao => {
         const capaContainer = cartao.querySelector('.capa-container');
 
-        // Verificar se já tem controles
         if (capaContainer && !capaContainer.querySelector('.controles-livro')) {
             const controlesHTML = `
                 <div class="controles-livro">
@@ -55,7 +46,6 @@ function adicionarControlesLivrosHTML() {
 
             capaContainer.insertAdjacentHTML('beforeend', controlesHTML);
 
-            // Adicionar evento para mudar status
             const btnMudarStatus = capaContainer.querySelector('.btn-mudar-status');
             if (btnMudarStatus) {
                 btnMudarStatus.addEventListener('click', function(e) {
@@ -70,9 +60,8 @@ function adicionarControlesLivrosHTML() {
     });
 }
 
-// Mudar status de um livro do HTML
 function mudarStatusLivroHTML(etiqueta) {
-    const statusOrder = ['lendo', 'lido', 'desejado', 'abandonado'];
+    const statusOrder = ['lendo', 'lido', 'desejado', 'emprestado'];
     const statusAtual = etiqueta.className.split(' ')[1]; // Pega a segunda classe
     const currentIndex = statusOrder.indexOf(statusAtual);
     const nextIndex = (currentIndex + 1) % statusOrder.length;
@@ -86,7 +75,7 @@ function mudarStatusLivroHTML(etiqueta) {
         'lendo': 'Lendo',
         'lido': 'Lido',
         'desejado': 'Desejado',
-        'abandonado': 'Abandonado'
+        'emprestado': 'Emprestado'
     };
 
     etiqueta.textContent = statusLabels[novoStatus] || 'Lendo';
@@ -159,7 +148,7 @@ function mapearStatusParaBackend(statusFront) {
         'desejado': 'WANT_TO_READ',
         'lendo': 'READING',
         'lido': 'READ',
-        'abandonado': 'ABANDONED'
+        'emprestado': 'BORROWED',
     };
     return map[statusFront] || 'WANT_TO_READ';
 }
@@ -273,7 +262,7 @@ function mudarStatusLivroJS(id) {
     if (!livro) return;
 
     // Rotacionar status
-    const statusOrder = ['desejado', 'lendo', 'lido', 'abandonado'];
+    const statusOrder = ['desejado', 'lendo', 'lido', 'emprestado'];
     const currentIndex = statusOrder.indexOf(livro.statusFront);
     const nextIndex = (currentIndex + 1) % statusOrder.length;
     const novoStatusFront = statusOrder[nextIndex];
@@ -320,8 +309,8 @@ function adicionarFiltros() {
             <span class="filtro-status ${statusSelecionado === 'todos' ? 'active' : ''}" data-filtro="todos">Todos</span>
             <span class="filtro-status ${statusSelecionado === 'lendo' ? 'active' : ''}" data-filtro="lendo">Lendo</span>
             <span class="filtro-status ${statusSelecionado === 'lido' ? 'active' : ''}" data-filtro="lido">Lidos</span>
+            <span class="filtro-status ${statusSelecionado === 'emprestado' ? 'active' : ''}" data-filtro="emprestado">Emprestados</span>
             <span class="filtro-status ${statusSelecionado === 'desejado' ? 'active' : ''}" data-filtro="desejado">Desejados</span>
-            <span class="filtro-status ${statusSelecionado === 'abandonado' ? 'active' : ''}" data-filtro="abandonado">Abandonados</span>
         </div>
     `;
 
@@ -371,7 +360,7 @@ function atualizarEstatisticas() {
     let lendoHTML = 0;
     let lidoHTML = 0;
     let desejadoHTML = 0;
-    let abandonadoHTML = 0;
+    let emprestadoHTML = 0;
 
     livrosHTML.forEach(cartao => {
         const etiqueta = cartao.querySelector('.etiqueta-status');
@@ -382,7 +371,7 @@ function atualizarEstatisticas() {
                 case 'lendo': lendoHTML++; break;
                 case 'lido': lidoHTML++; break;
                 case 'desejado': desejadoHTML++; break;
-                case 'abandonado': abandonadoHTML++; break;
+                case 'emprestado': emprestadoHTML++; break;
             }
         }
     });
@@ -391,7 +380,7 @@ function atualizarEstatisticas() {
     const lendoJS = livros.filter(l => l.statusFront === 'lendo').length;
     const lidoJS = livros.filter(l => l.statusFront === 'lido').length;
     const desejadoJS = livros.filter(l => l.statusFront === 'desejado').length;
-    const abandonadoJS = livros.filter(l => l.statusFront === 'abandonado').length;
+    const emprestadoJS = livros.filter(l => l.statusFront === 'emprestado').length;
 
     // Totais combinados
     const total = totalHTML + livros.length;
