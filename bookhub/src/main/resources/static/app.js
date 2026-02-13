@@ -17,8 +17,16 @@ const statusMap = {
 document.addEventListener('DOMContentLoaded', function () {
     inicializarEventos();
     inicializarLivros();
-    processarLivrosHTMLExistentes();
-    atualizarTodasEstatisticas(); // Usar uma única função para atualizar tudo
+
+    // Processar livros HTML primeiro
+    setTimeout(() => {
+        processarLivrosHTMLExistentes();
+        // Atualizar estatísticas após processar tudo
+        setTimeout(() => {
+            atualizarTodasEstatisticas();
+        }, 200);
+    }, 100);
+
     adicionarFiltros();
     adicionarFiltrosGenero();
     inicializarPerfilUsuario();
@@ -52,16 +60,575 @@ function renderizarEstrelas(avaliacao = 0) {
 // ============================================
 
 function obterTodosOsLivros() {
-    // Usar apenas o array livros como fonte da verdade
-    // O array livros já contém todos os livros (tanto HTML quanto JS)
-    return livros.map(livro => ({
+    // Obter livros do array (inclui tanto HTML quanto JS)
+    const livrosArray = livros.map(livro => ({
         ...livro,
-        // Garantir que todos os campos necessários existam
-        statusFront: livro.statusFront || 'lendo',
+        statusFront: livro.statusFront || livro.status || 'lendo',
         avaliacao: livro.avaliacao || 0,
         genero: livro.genero || 'Outros',
         ano: livro.ano || new Date().getFullYear()
     }));
+
+    // Obter livros do DOM que podem não estar no array
+    const livrosDOM = document.querySelectorAll('#gradeLivrosRecentes .cartao-livro:not([data-processado-estatistica])');
+
+    livrosDOM.forEach(cartao => {
+        cartao.setAttribute('data-processado-estatistica', 'true');
+
+        // Verificar se já existe no array por ID ou conteúdo
+        const id = cartao.getAttribute('data-id');
+        if (!id) return;
+
+        const existeNoArray = livrosArray.some(l => l.id === id);
+
+        if (!existeNoArray) {
+            // Extrair informações do card
+            const titulo = cartao.querySelector('.detalhes-livro h6')?.textContent?.trim() || 'Título desconhecido';
+            const autor = cartao.querySelector('.detalhes-livro p')?.textContent?.trim() || 'Autor desconhecido';
+
+            const etiqueta = cartao.querySelector('.etiqueta-status');
+            let statusFront = 'lendo';
+            if (etiqueta) {
+                if (etiqueta.classList.contains('lido')) statusFront = 'lido';
+                else if (etiqueta.classList.contains('desejado')) statusFront = 'desejado';
+                else if (etiqueta.classList.contains('emprestado')) statusFront = 'emprestado';
+            }
+
+            const generoElement = cartao.querySelector('.genero-livro');
+            const genero = generoElement?.textContent?.trim() || 'Outros';
+
+            const estrelasElement = cartao.querySelector('.estrelas-container');
+            let avaliacao = 0;
+            if (estrelasElement) {
+                const estrelasPreenchidas = estrelasElement.querySelectorAll('.bi-star-fill').length;
+                avaliacao = estrelasPreenchidas;
+            }
+
+            livrosArray.push({
+                id: id,
+                titulo: titulo,
+                autor: autor,
+                statusFront: statusFront,
+                avaliacao: avaliacao,
+                genero: genero,
+                ano: new Date().getFullYear(),
+                isHTML: true
+            });
+        }
+    });
+
+    // Log para debug
+    console.log('📊 Total de livros únicos:', livrosArray.length);
+    console.log('📚 Livros:', livrosArray.map(l => `${l.titulo} (${l.statusFront})`));
+
+    return livrosArray;
+}
+// ============================================
+// FUNÇÃO CORRIGIDA: LER ESTATÍSTICAS DIRETAMENTE DO DOM
+// ============================================
+
+function atualizarEstatisticasPeloDOM() {
+    console.log('🔍 Lendo estatísticas diretamente do DOM...');
+
+    // Selecionar todos os cards de livro
+    const todosCards = document.querySelectorAll('#gradeLivrosRecentes .cartao-livro');
+
+    let total = todosCards.length;
+    let lendo = 0;
+    let lido = 0;
+    let desejado = 0;
+    let emprestado = 0;
+
+    // Analisar cada card para determinar o status
+    todosCards.forEach(card => {
+        // Verificar pela etiqueta de status
+        const etiqueta = card.querySelector('.etiqueta-status');
+        if (etiqueta) {
+            const textoStatus = etiqueta.textContent.trim().toLowerCase();
+
+            if (textoStatus.includes('lendo') || etiqueta.classList.contains('lendo')) {
+                lendo++;
+                console.log('📖 Lendo:', card.querySelector('.detalhes-livro h6')?.textContent);
+            }
+            else if (textoStatus.includes('lido') || etiqueta.classList.contains('lido')) {
+                lido++;
+                console.log('✅ Lido:', card.querySelector('.detalhes-livro h6')?.textContent);
+            }
+            else if (textoStatus.includes('desejado') || etiqueta.classList.contains('desejado')) {
+                desejado++;
+                console.log('⭐ Desejado:', card.querySelector('.detalhes-livro h6')?.textContent);
+            }
+            else if (textoStatus.includes('emprestado') || etiqueta.classList.contains('emprestado')) {
+                emprestado++;
+                console.log('📤 Emprestado:', card.querySelector('.detalhes-livro h6')?.textContent);
+            }
+            else {
+                // Se não conseguir identificar, verificar pelas classes
+                if (etiqueta.classList.contains('lendo')) lendo++;
+                else if (etiqueta.classList.contains('lido')) lido++;
+                else if (etiqueta.classList.contains('desejado')) desejado++;
+                else if (etiqueta.classList.contains('emprestado')) emprestado++;
+                else {
+                    // Status padrão
+                    lendo++;
+                }
+            }
+        } else {
+            // Se não tiver etiqueta, verificar por outras pistas
+            const detalhes = card.querySelector('.detalhes-livro');
+            if (detalhes) {
+                const textoCompleto = detalhes.textContent.toLowerCase();
+                if (textoCompleto.includes('lendo')) lendo++;
+                else if (textoCompleto.includes('lido')) lido++;
+                else if (textoCompleto.includes('desejado')) desejado++;
+                else if (textoCompleto.includes('emprestado')) emprestado++;
+                else lendo++; // padrão
+            } else {
+                lendo++; // padrão
+            }
+        }
+    });
+
+    // Log detalhado
+    console.log('📊 Estatísticas do DOM:', {
+        total,
+        lendo,
+        lido,
+        desejado,
+        emprestado,
+        soma: lendo + lido + desejado + emprestado
+    });
+
+    // Verificar se a soma bate com o total
+    if (lendo + lido + desejado + emprestado !== total) {
+        console.warn('⚠️ Discrepância na soma dos status!');
+    }
+
+    // Listar todos os livros para debug
+    console.log('📚 Lista completa de livros:');
+    todosCards.forEach((card, index) => {
+        const titulo = card.querySelector('.detalhes-livro h6')?.textContent || 'Sem título';
+        const etiqueta = card.querySelector('.etiqueta-status')?.textContent || 'Sem status';
+        console.log(`${index + 1}. ${titulo} - [${etiqueta}]`);
+    });
+
+    // Atualizar elementos do DOM
+    const totalEl = document.getElementById('totalLivros');
+    const lendoEl = document.getElementById('lendoAgora');
+    const desejadoEl = document.getElementById('listaDesejos');
+    const emprestadoEl = document.getElementById('emprestimosAtivos');
+    const lidosPerfilEl = document.getElementById('livrosLidos');
+    const totalPerfilEl = document.getElementById('totalLivrosPerfil');
+
+    if (totalEl) totalEl.textContent = total;
+    if (lendoEl) lendoEl.textContent = lendo;
+    if (desejadoEl) desejadoEl.textContent = desejado;
+    if (emprestadoEl) emprestadoEl.textContent = emprestado;
+    if (lidosPerfilEl) lidosPerfilEl.textContent = lido;
+    if (totalPerfilEl) totalPerfilEl.textContent = total;
+
+    // Calcular tempo médio (dias por livro)
+    const tempoMedioEl = document.getElementById('tempoMedio');
+    if (tempoMedioEl) {
+        tempoMedioEl.textContent = lido > 0 ? Math.round(365 / lido) : 0;
+    }
+
+    // Calcular páginas lidas (estimativa)
+    const paginasEl = document.getElementById('paginasLidas');
+    if (paginasEl) {
+        paginasEl.textContent = (lido * 300).toLocaleString();
+    }
+
+    // Atualizar progresso anual
+    const perfil = JSON.parse(localStorage.getItem('bookHubPerfil')) || {};
+    const metaAnual = perfil.metaAnual || 12;
+    const progresso = Math.min(Math.round((lido / metaAnual) * 100), 100);
+
+    const progressoAnual = document.getElementById('progressoAnual');
+    const metaAnualEl = document.getElementById('metaAnual');
+
+    if (progressoAnual) {
+        progressoAnual.style.width = `${progresso}%`;
+        progressoAnual.textContent = `${progresso}%`;
+    }
+    if (metaAnualEl) metaAnualEl.textContent = metaAnual;
+
+    // Avaliação média
+    calcularAvaliacaoMediaPeloDOM();
+
+    return { total, lendo, lido, desejado, emprestado };
+}
+
+// ============================================
+// FUNÇÃO PARA CALCULAR AVALIAÇÃO MÉDIA PELO DOM
+// ============================================
+
+function calcularAvaliacaoMediaPeloDOM() {
+    const cards = document.querySelectorAll('#gradeLivrosRecentes .cartao-livro');
+    let somaAvaliacoes = 0;
+    let totalComAvaliacao = 0;
+
+    cards.forEach(card => {
+        const estrelasContainer = card.querySelector('.estrelas-container');
+        if (estrelasContainer) {
+            const estrelasPreenchidas = estrelasContainer.querySelectorAll('.bi-star-fill').length;
+            if (estrelasPreenchidas > 0) {
+                somaAvaliacoes += estrelasPreenchidas;
+                totalComAvaliacao++;
+            }
+        }
+    });
+
+    const avaliacaoMediaEl = document.getElementById('avaliacaoMedia');
+    if (avaliacaoMediaEl) {
+        if (totalComAvaliacao > 0) {
+            const media = (somaAvaliacoes / totalComAvaliacao).toFixed(1);
+            avaliacaoMediaEl.textContent = media;
+        } else {
+            avaliacaoMediaEl.textContent = '0';
+        }
+    }
+}
+
+// ============================================
+// FUNÇÃO PARA ATUALIZAR GÊNEROS PELO DOM
+// ============================================
+
+function atualizarGenerosPeloDOM() {
+    const cards = document.querySelectorAll('#gradeLivrosRecentes .cartao-livro');
+    const contadorGeneros = {};
+
+    cards.forEach(card => {
+        // Tentar encontrar o gênero no card
+        const generoElement = card.querySelector('.genero-livro');
+        let genero = 'Outros';
+
+        if (generoElement) {
+            genero = generoElement.textContent.trim();
+        } else {
+            // Tentar encontrar em outros lugares
+            const detalhes = card.querySelector('.detalhes-livro');
+            if (detalhes) {
+                const texto = detalhes.textContent;
+                // Lista de gêneros comuns para detectar
+                const generosComuns = ['Fantasia', 'Romance', 'Suspense', 'Drama', 'Biografia',
+                    'Young Adult', 'Ficção Científica', 'Aventura', 'Terror',
+                    'Mistério', 'História', 'Autoajuda', 'Poesia'];
+
+                for (const g of generosComuns) {
+                    if (texto.includes(g)) {
+                        genero = g;
+                        break;
+                    }
+                }
+            }
+        }
+
+        contadorGeneros[genero] = (contadorGeneros[genero] || 0) + 1;
+    });
+
+    // Atualizar visualização de gêneros
+    const containerGeneros = document.getElementById('livrosPorGeneros');
+    if (containerGeneros) {
+        const generosArray = Object.entries(contadorGeneros)
+            .map(([nome, quantidade]) => ({ nome, quantidade }))
+            .sort((a, b) => b.quantidade - a.quantidade);
+
+        if (generosArray.length === 0) {
+            containerGeneros.innerHTML = `<div class="sem-dados"><i class="bi bi-pie-chart"></i><p>Adicione livros para ver a distribuição</p></div>`;
+        } else {
+            let html = '<div class="grafico-barras">';
+            const maxQuantidade = Math.max(...generosArray.map(g => g.quantidade), 1);
+
+            generosArray.slice(0, 5).forEach(genero => {
+                const altura = Math.round((genero.quantidade / maxQuantidade) * 150);
+                html += `<div class="barra-genero" style="height: ${altura}px" title="${genero.quantidade} livros de ${genero.nome}">
+                    <span class="barra-valor">${genero.quantidade}</span>
+                    <span class="barra-label">${genero.nome.substring(0, 10)}${genero.nome.length > 10 ? '...' : ''}</span>
+                </div>`;
+            });
+            html += '</div>';
+            containerGeneros.innerHTML = html;
+        }
+    }
+
+    // Atualizar filtros de gênero
+    const filtrosGeneroContainer = document.querySelector('.filtros-genero-botoes');
+    if (filtrosGeneroContainer) {
+        const generosExistentes = Array.from(filtrosGeneroContainer.querySelectorAll('.filtro-genero'))
+            .map(el => el.dataset.genero)
+            .filter(g => g !== 'todos');
+
+        const novosGeneros = Object.keys(contadorGeneros).filter(g => !generosExistentes.includes(g));
+
+        novosGeneros.forEach(genero => {
+            const span = document.createElement('span');
+            span.className = 'filtro-genero';
+            span.dataset.genero = genero;
+            span.textContent = genero;
+            span.addEventListener('click', function() {
+                document.querySelectorAll('.filtro-genero').forEach(f => f.classList.remove('active'));
+                this.classList.add('active');
+                generoSelecionado = this.dataset.genero;
+                aplicarFiltroPeloDOM();
+            });
+            filtrosGeneroContainer.appendChild(span);
+        });
+    }
+}
+
+// ============================================
+// FUNÇÃO PARA ATUALIZAR ANOS PELO DOM
+// ============================================
+
+function atualizarAnosPeloDOM() {
+    const cards = document.querySelectorAll('#gradeLivrosRecentes .cartao-livro');
+    const contadorAnos = {};
+
+    // Como não temos ano nos cards, vamos distribuir aleatoriamente para teste
+    // Em produção, você precisaria de um atributo data-ano nos cards
+    cards.forEach((card, index) => {
+        // Distribuição para teste: 2022-2026
+        const anos = [2022, 2023, 2024, 2025, 2026];
+        const ano = anos[index % anos.length];
+        contadorAnos[ano] = (contadorAnos[ano] || 0) + 1;
+    });
+
+    const containerAnos = document.getElementById('livrosPorAno');
+    if (containerAnos) {
+        const anosArray = Object.entries(contadorAnos)
+            .map(([ano, quantidade]) => ({ ano, quantidade }))
+            .sort((a, b) => b.ano - a.ano);
+
+        if (anosArray.length === 0) {
+            containerAnos.innerHTML = `<div class="sem-dados"><i class="bi bi-calendar-x"></i><p>Nenhum livro adicionado</p></div>`;
+        } else {
+            let html = '<div class="grafico-barras">';
+            const maxQuantidade = Math.max(...anosArray.map(a => a.quantidade), 1);
+
+            anosArray.slice(0, 6).forEach(item => {
+                const altura = Math.round((item.quantidade / maxQuantidade) * 150);
+                html += `<div class="barra-ano" style="height: ${altura}px" title="${item.quantidade} livros em ${item.ano}">
+                    <span class="barra-valor">${item.quantidade}</span>
+                    <span class="barra-label">${item.ano}</span>
+                </div>`;
+            });
+            html += '</div>';
+            containerAnos.innerHTML = html;
+        }
+    }
+}
+
+// ============================================
+// FUNÇÃO PARA APLICAR FILTROS PELO DOM
+// ============================================
+
+function aplicarFiltroPeloDOM() {
+    const cards = document.querySelectorAll('#gradeLivrosRecentes .cartao-livro');
+
+    cards.forEach(card => {
+        let mostrar = true;
+
+        // Filtrar por status
+        if (statusSelecionado !== 'todos') {
+            const etiqueta = card.querySelector('.etiqueta-status');
+            if (etiqueta) {
+                const statusCard = etiqueta.textContent.trim().toLowerCase();
+                if (!statusCard.includes(statusSelecionado)) {
+                    mostrar = false;
+                }
+            } else {
+                mostrar = false;
+            }
+        }
+
+        // Filtrar por gênero
+        if (mostrar && generoSelecionado !== 'todos') {
+            const generoElement = card.querySelector('.genero-livro');
+            if (generoElement) {
+                const generoCard = generoElement.textContent.trim();
+                if (generoCard !== generoSelecionado) {
+                    mostrar = false;
+                }
+            } else {
+                mostrar = false;
+            }
+        }
+
+        card.style.display = mostrar ? 'block' : 'none';
+    });
+}
+
+// ============================================
+// NOVA INICIALIZAÇÃO
+// ============================================
+
+document.addEventListener('DOMContentLoaded', function () {
+    console.log('🚀 Inicializando BookHub com leitura direta do DOM...');
+
+    // Inicializar eventos básicos
+    inicializarEventos();
+
+    // Aguardar um momento para o DOM estar completamente carregado
+    setTimeout(() => {
+        // Ler estatísticas diretamente do DOM
+        const stats = atualizarEstatisticasPeloDOM();
+
+        // Atualizar gêneros e anos
+        atualizarGenerosPeloDOM();
+        atualizarAnosPeloDOM();
+
+        console.log('✅ Estatísticas finais:', stats);
+
+        // Configurar observador para mudanças
+        configurarObservadorDOM();
+    }, 500);
+
+    // Configurar outros componentes
+    inicializarPerfilUsuario();
+    adicionarBuscaAutomaticaAoFormulario();
+    adicionarBuscaPorISBN();
+    inicializarModalSinopse();
+    inicializarSistemaAvaliacao();
+});
+
+// ============================================
+// CONFIGURAR OBSERVADOR PARA MUDANÇAS NO DOM
+// ============================================
+
+function configurarObservadorDOM() {
+    const gradeLivros = document.getElementById('gradeLivrosRecentes');
+    if (!gradeLivros) return;
+
+    const observer = new MutationObserver(function(mutations) {
+        // Debounce para evitar múltiplas atualizações
+        clearTimeout(window.atualizacaoTimeout);
+        window.atualizacaoTimeout = setTimeout(() => {
+            console.log('🔄 DOM alterado, atualizando estatísticas...');
+            atualizarEstatisticasPeloDOM();
+            atualizarGenerosPeloDOM();
+            atualizarAnosPeloDOM();
+        }, 300);
+    });
+
+    observer.observe(gradeLivros, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['class', 'style']
+    });
+
+    console.log('👀 Observador de DOM configurado');
+}
+
+// ============================================
+// SOBRESCREVER FUNÇÕES EXISTENTES PARA USAR O DOM
+// ============================================
+
+// Substituir a função de atualização de estatísticas
+function atualizarTodasEstatisticas() {
+    return atualizarEstatisticasPeloDOM();
+}
+
+// Substituir função de cálculo de perfil
+function calcularEstatisticasPerfil() {
+    return atualizarEstatisticasPeloDOM();
+}
+
+// Manter funções originais mas redirecionar
+const atualizarEstatisticasOriginal = atualizarEstatisticas;
+const calcularEstatisticasPerfilOriginal = calcularEstatisticasPerfil;
+
+// ============================================
+// FUNÇÃO PARA DEBUG - LISTAR TODOS OS LIVROS
+// ============================================
+
+function listarTodosLivros() {
+    console.log('📋 ===== LISTA COMPLETA DE LIVROS =====');
+    const cards = document.querySelectorAll('#gradeLivrosRecentes .cartao-livro');
+
+    cards.forEach((card, index) => {
+        const titulo = card.querySelector('.detalhes-livro h6')?.textContent || 'Sem título';
+        const autor = card.querySelector('.detalhes-livro p')?.textContent || 'Sem autor';
+        const etiqueta = card.querySelector('.etiqueta-status')?.textContent || 'Sem status';
+        const genero = card.querySelector('.genero-livro')?.textContent || 'Sem gênero';
+
+        const estrelas = card.querySelectorAll('.estrelas-container .bi-star-fill').length;
+
+        console.log(`${index + 1}. "${titulo}"`);
+        console.log(`   Autor: ${autor}`);
+        console.log(`   Status: ${etiqueta}`);
+        console.log(`   Gênero: ${genero}`);
+        console.log(`   Avaliação: ${estrelas}/5`);
+        console.log('---');
+    });
+
+    console.log(`📊 TOTAL: ${cards.length} livros`);
+}
+
+// Expor função de debug no console
+window.debugLivros = listarTodosLivros;
+window.atualizarStats = atualizarEstatisticasPeloDOM;
+
+console.log('✅ BookHub configurado para leitura direta do DOM');
+console.log('💡 Use window.debugLivros() para ver todos os livros');
+console.log('💡 Use window.atualizarStats() para atualizar estatísticas manualmente');
+
+
+// ============================================
+// FUNÇÃO CORRIGIDA: ATUALIZAR AVALIAÇÃO MÉDIA
+// ============================================
+
+function atualizarAvaliacaoMedia(todosLivros = null) {
+    const livrosParaCalcular = todosLivros || obterTodosOsLivros();
+    const livrosComAvaliacao = livrosParaCalcular.filter(l => l.avaliacao && l.avaliacao > 0);
+
+    if (livrosComAvaliacao.length === 0) {
+        document.getElementById('avaliacaoMedia').textContent = '0';
+        return;
+    }
+
+    const soma = livrosComAvaliacao.reduce((acc, livro) => acc + livro.avaliacao, 0);
+    const media = (soma / livrosComAvaliacao.length).toFixed(1);
+    document.getElementById('avaliacaoMedia').textContent = media;
+}
+
+// ============================================
+// FUNÇÃO CORRIGIDA: CALCULAR ESTATÍSTICAS DO PERFIL
+// ============================================
+
+function calcularEstatisticasPerfil(todosLivros = null) {
+    const livrosParaCalcular = todosLivros || obterTodosOsLivros();
+
+    const totalLivros = livrosParaCalcular.length;
+    const livrosLidos = livrosParaCalcular.filter(l => l.statusFront === 'lido').length;
+
+    const tempoMedioEl = document.getElementById('tempoMedio');
+    const totalPerfilEl = document.getElementById('totalLivrosPerfil');
+    const lidosEl = document.getElementById('livrosLidos');
+    const paginasEl = document.getElementById('paginasLidas');
+    const mesAtivoEl = document.getElementById('mesAtivo');
+
+    if (tempoMedioEl) {
+        tempoMedioEl.textContent = livrosLidos > 0 ? Math.round(365 / livrosLidos) : 0;
+    }
+    if (totalPerfilEl) totalPerfilEl.textContent = totalLivros;
+    if (lidosEl) lidosEl.textContent = livrosLidos;
+    if (paginasEl) paginasEl.textContent = (livrosLidos * 300).toLocaleString();
+    if (mesAtivoEl) mesAtivoEl.textContent = 'Jan';
+
+    const perfil = JSON.parse(localStorage.getItem('bookHubPerfil')) || {};
+    const metaAnual = perfil.metaAnual || 12;
+    const progresso = Math.min(Math.round((livrosLidos / metaAnual) * 100), 100);
+
+    const progressoAnual = document.getElementById('progressoAnual');
+    const metaAnualEl = document.getElementById('metaAnual');
+
+    if (progressoAnual) {
+        progressoAnual.style.width = `${progresso}%`;
+        progressoAnual.textContent = `${progresso}%`;
+    }
+    if (metaAnualEl) metaAnualEl.textContent = metaAnual;
 }
 
 // ============================================
@@ -72,21 +639,17 @@ function processarLivrosHTMLExistentes() {
     const livrosHTML = document.querySelectorAll('#gradeLivrosRecentes .cartao-livro:not([data-processado])');
 
     livrosHTML.forEach((cartao, index) => {
-        // Verificar se já foi processado
         if (cartao.hasAttribute('data-processado')) return;
 
         cartao.setAttribute('data-processado', 'true');
         cartao.setAttribute('data-tipo', 'html');
 
-        // Gerar ID único
         const livroId = `html-${Date.now()}-${index}-${Math.random()}`;
         cartao.setAttribute('data-id', livroId);
 
-        // Extrair informações
         const titulo = cartao.querySelector('.detalhes-livro h6')?.textContent?.trim() || 'Título desconhecido';
         const autor = cartao.querySelector('.detalhes-livro p')?.textContent?.trim() || 'Autor desconhecido';
 
-        // Tentar encontrar o gênero em diferentes lugares
         let genero = 'Outros';
         const generoElement = cartao.querySelector('.genero-livro');
         if (generoElement) {
@@ -95,7 +658,6 @@ function processarLivrosHTMLExistentes() {
 
         const capa = cartao.querySelector('.capa-imagem')?.src || '';
 
-        // Determinar status
         const etiqueta = cartao.querySelector('.etiqueta-status');
         let statusAtual = 'lendo';
         let statusLabel = 'Lendo';
@@ -113,7 +675,6 @@ function processarLivrosHTMLExistentes() {
             }
         }
 
-        // Verificar se já existe no array (evitar duplicação)
         const existe = livros.some(l => l.id === livroId ||
             (l.titulo === titulo && l.autor === autor && l.isHTML));
 
@@ -130,13 +691,25 @@ function processarLivrosHTMLExistentes() {
                 genero: genero,
                 avaliacao: 0,
                 isHTML: true,
-                ano: new Date().getFullYear() - Math.floor(Math.random() * 5) // Ano variado para teste
+                ano: new Date().getFullYear() - Math.floor(Math.random() * 5)
             };
             livros.push(livroObj);
         }
 
-        modificarEstruturaCardSemEstrelas(cartao, livroObj);
+        modificarEstruturaCardSemEstrelas(cartao, livroObj || {
+            id: livroId,
+            titulo: titulo,
+            autor: autor,
+            statusFront: statusAtual,
+            statusLabel: statusLabel,
+            statusColor: statusAtual,
+            genero: genero,
+            avaliacao: 0,
+            isHTML: true
+        });
     });
+
+    console.log(`✅ Processados ${livrosHTML.length} livros HTML`);
 }
 
 // ============================================
@@ -149,11 +722,9 @@ function modificarEstruturaCardSemEstrelas(cartao, livro) {
 
     if (!capaContainer || !detalhesLivro) return;
 
-    // Remover controles antigos
     const controlesAntigos = capaContainer.querySelector('.controles-livro');
     if (controlesAntigos) controlesAntigos.remove();
 
-    // Adicionar novos controles
     const controlesHTML = `
         <div class="controles-livro">
             <button class="btn-controle btn-mudar-status-html" title="Mudar status">
@@ -169,7 +740,6 @@ function modificarEstruturaCardSemEstrelas(cartao, livro) {
     `;
     capaContainer.insertAdjacentHTML('beforeend', controlesHTML);
 
-    // Adicionar botão de sinopse
     let sinopseBtn = capaContainer.querySelector('.btn-sinopse');
     if (!sinopseBtn) {
         sinopseBtn = document.createElement('button');
@@ -184,7 +754,6 @@ function modificarEstruturaCardSemEstrelas(cartao, livro) {
         capaContainer.appendChild(sinopseBtn);
     }
 
-    // Adicionar container de estrelas
     let estrelasContainer = detalhesLivro.querySelector('.estrelas-container');
     if (!estrelasContainer) {
         estrelasContainer = document.createElement('div');
@@ -202,7 +771,6 @@ function modificarEstruturaCardSemEstrelas(cartao, livro) {
     }
     estrelasContainer.innerHTML = renderizarEstrelas(livro.avaliacao || 0);
 
-    // Event listeners
     capaContainer.querySelector('.btn-mudar-status-html').addEventListener('click', (e) => {
         e.stopPropagation();
         mudarStatusLivroHTML(cartao, livro);
@@ -232,6 +800,37 @@ function modificarEstruturaCardSemEstrelas(cartao, livro) {
             livro.statusLabel
         );
     });
+}
+
+// ============================================
+// FUNÇÃO CORRIGIDA: ATUALIZAR TODAS AS ESTATÍSTICAS
+// ============================================
+
+function atualizarTodasEstatisticas() {
+    console.log('🔄 Atualizando todas as estatísticas...');
+
+    // Re-processar livros HTML que podem ter sido adicionados
+    processarLivrosHTMLExistentes();
+
+    // Obter todos os livros (incluindo HTML processado)
+    const todosLivros = obterTodosOsLivros();
+
+    console.log('📚 Total de livros encontrados:', todosLivros.length);
+
+    // Atualizar estatísticas principais
+    atualizarEstatisticas();
+
+    // Atualizar distribuição por gênero
+    detectarGenerosLivros();
+    atualizarFiltroGeneroPerfil();
+
+    // Atualizar filtro por ano
+    atualizarFiltroAno();
+
+    // Atualizar estatísticas do perfil
+    calcularEstatisticasPerfil(todosLivros);
+
+    console.log('✅ Estatísticas atualizadas com sucesso!');
 }
 
 // ============================================
@@ -341,7 +940,6 @@ function salvarAvaliacao() {
     if (livro) {
         livro.avaliacao = notaSelecionada;
 
-        // Atualizar UI
         const card = document.querySelector(`[data-id="${livroSelecionadoParaAvaliacao}"]`);
         if (card) {
             const estrelasContainer = card.querySelector('.estrelas-container');
@@ -354,20 +952,6 @@ function salvarAvaliacao() {
         atualizarTodasEstatisticas();
         mostrarToast(`✅ Livro avaliado com ${notaSelecionada} estrela${notaSelecionada !== 1 ? 's' : ''}!`);
     }
-}
-
-function atualizarAvaliacaoMedia() {
-    const todosLivros = obterTodosOsLivros();
-    const livrosComAvaliacao = todosLivros.filter(l => l.avaliacao && l.avaliacao > 0);
-
-    if (livrosComAvaliacao.length === 0) {
-        document.getElementById('avaliacaoMedia').textContent = '0';
-        return;
-    }
-
-    const soma = livrosComAvaliacao.reduce((acc, livro) => acc + livro.avaliacao, 0);
-    const media = (soma / livrosComAvaliacao.length).toFixed(1);
-    document.getElementById('avaliacaoMedia').textContent = media;
 }
 
 function mostrarToast(mensagem) {
@@ -512,10 +1096,6 @@ function mapearStatusParaBackend(statusFront) {
 function mapearStatusParaFront(statusBackend) {
     return statusMap[statusBackend] || {front: 'desejado', label: 'Desejado', color: 'desejado'};
 }
-
-// ============================================
-// FUNÇÃO CORRIGIDA: CRIAR ELEMENTO LIVRO JS
-// ============================================
 
 function criarElementoLivroJS(livro) {
     const div = document.createElement('div');
@@ -673,7 +1253,7 @@ function salvarNoLocalStorage() {
 }
 
 // ============================================
-// FILTROS E ESTATÍSTICAS CORRIGIDOS
+// FILTROS
 // ============================================
 
 function adicionarFiltros() {
@@ -751,7 +1331,6 @@ function atualizarFiltrosGenero() {
 }
 
 function aplicarFiltroLivros() {
-    // Filtrar livros HTML
     document.querySelectorAll('#gradeLivrosRecentes .cartao-livro[data-tipo="html"]').forEach(cartao => {
         const id = cartao.getAttribute('data-id');
         const livro = livros.find(l => l.id === id);
@@ -763,50 +1342,16 @@ function aplicarFiltroLivros() {
         }
     });
 
-    // Filtrar livros JS
     renderizarNovosLivros();
 }
 
-function atualizarEstatisticas() {
-    const todosLivros = obterTodosOsLivros();
-
-    // Log para debug
-    console.log('Total de livros únicos:', todosLivros.length);
-    console.log('Livros:', todosLivros.map(l => l.titulo));
-
-    let total = todosLivros.length;
-    let lendo = 0, lido = 0, desejado = 0, emprestado = 0;
-
-    todosLivros.forEach(livro => {
-        const status = livro.statusFront || 'lendo';
-        if (status === 'lendo') lendo++;
-        else if (status === 'lido') lido++;
-        else if (status === 'desejado') desejado++;
-        else if (status === 'emprestado') emprestado++;
-    });
-
-    // Atualizar elementos do DOM
-    const totalEl = document.getElementById('totalLivros');
-    const lendoEl = document.getElementById('lendoAgora');
-    const desejadoEl = document.getElementById('listaDesejos');
-    const emprestadoEl = document.getElementById('emprestimosAtivos');
-
-    if (totalEl) totalEl.textContent = total;
-    if (lendoEl) lendoEl.textContent = lendo;
-    if (desejadoEl) desejadoEl.textContent = desejado;
-    if (emprestadoEl) emprestadoEl.textContent = emprestado;
-
-    atualizarAvaliacaoMedia();
-}
-
 // ============================================
-// PERFIL DO USUÁRIO - ESTATÍSTICAS CORRIGIDAS
+// PERFIL DO USUÁRIO
 // ============================================
 
 function inicializarPerfilUsuario() {
     carregarDadosPerfil();
     configurarEventosPerfil();
-    calcularEstatisticasPerfil();
     atualizarFiltroAno();
     atualizarFiltroGeneroPerfil();
 }
@@ -818,9 +1363,7 @@ function carregarDadosPerfil() {
             const perfil = JSON.parse(perfilSalvo);
             if (perfil.bio) document.getElementById('bioUsuario').textContent = perfil.bio;
             if (perfil.metaAnual) document.getElementById('metaAnual').textContent = perfil.metaAnual;
-        } catch (e) {
-            // Ignorar erro
-        }
+        } catch (e) {}
     } else {
         const perfilPadrao = {bio: 'Apaixonado(a) por leitura! 📚', metaAnual: 12};
         localStorage.setItem('bookHubPerfil', JSON.stringify(perfilPadrao));
@@ -893,38 +1436,8 @@ function salvarBioUsuario(novaBio) {
     localStorage.setItem('bookHubPerfil', JSON.stringify(perfil));
 }
 
-function calcularEstatisticasPerfil() {
-    const todosLivros = obterTodosOsLivros();
-    const totalLivros = todosLivros.length;
-    const livrosLidos = todosLivros.filter(l => l.statusFront === 'lido').length;
-
-    const tempoMedioEl = document.getElementById('tempoMedio');
-    const totalPerfilEl = document.getElementById('totalLivrosPerfil');
-    const lidosEl = document.getElementById('livrosLidos');
-    const paginasEl = document.getElementById('paginasLidas');
-    const mesAtivoEl = document.getElementById('mesAtivo');
-
-    if (tempoMedioEl) tempoMedioEl.textContent = livrosLidos > 0 ? Math.round(365 / livrosLidos) : 0;
-    if (totalPerfilEl) totalPerfilEl.textContent = totalLivros;
-    if (lidosEl) lidosEl.textContent = livrosLidos;
-    if (paginasEl) paginasEl.textContent = (livrosLidos * 300).toLocaleString();
-    if (mesAtivoEl) mesAtivoEl.textContent = 'Jan';
-
-    const perfil = JSON.parse(localStorage.getItem('bookHubPerfil')) || {};
-    const metaAnual = perfil.metaAnual || 12;
-    const progresso = Math.min(Math.round((livrosLidos / metaAnual) * 100), 100);
-    const progressoAnual = document.getElementById('progressoAnual');
-    const metaAnualEl = document.getElementById('metaAnual');
-
-    if (progressoAnual) {
-        progressoAnual.style.width = `${progresso}%`;
-        progressoAnual.textContent = `${progresso}%`;
-    }
-    if (metaAnualEl) metaAnualEl.textContent = metaAnual;
-}
-
 // ============================================
-// FILTRO POR ANO CORRIGIDO
+// FILTRO POR ANO
 // ============================================
 
 function atualizarFiltroAno() {
@@ -1004,7 +1517,7 @@ function filtrarLivrosPorAno(ano) {
 }
 
 // ============================================
-// DISTRIBUIÇÃO POR GÊNERO CORRIGIDA
+// DISTRIBUIÇÃO POR GÊNERO
 // ============================================
 
 function atualizarFiltroGeneroPerfil() {
@@ -1086,8 +1599,9 @@ function renderizarGeneros(generos) {
 
 function detectarGenerosLivros() {
     const contadorGeneros = {};
+    const todosLivros = obterTodosOsLivros();
 
-    livros.forEach(livro => {
+    todosLivros.forEach(livro => {
         if (livro.genero && livro.genero !== '') {
             contadorGeneros[livro.genero] = (contadorGeneros[livro.genero] || 0) + 1;
         }
@@ -1101,17 +1615,6 @@ function detectarGenerosLivros() {
 
     renderizarGeneros(generosArray);
     return generosArray;
-}
-
-function atualizarTodasEstatisticas() {
-    console.log('Atualizando todas as estatísticas...');
-    console.log('Livros no array:', livros.length);
-
-    atualizarEstatisticas();
-    calcularEstatisticasPerfil();
-    detectarGenerosLivros();
-    atualizarFiltroGeneroPerfil();
-    atualizarFiltroAno();
 }
 
 // ============================================
@@ -1207,7 +1710,7 @@ function getStatusColor(status) {
 }
 
 // ============================================
-// INTEGRAÇÃO COM APIs (mantido igual)
+// INTEGRAÇÃO COM APIs
 // ============================================
 
 const API_CONFIG = {
@@ -1357,7 +1860,7 @@ async function buscarOpenLibrary(titulo, autor) {
 }
 
 // ============================================
-// BUSCA AUTOMÁTICA (mantido igual)
+// BUSCA AUTOMÁTICA
 // ============================================
 
 function adicionarBuscaAutomaticaAoFormulario() {
@@ -1452,7 +1955,7 @@ function adicionarBuscaAutomaticaAoFormulario() {
 }
 
 // ============================================
-// BUSCA POR ISBN (mantido igual)
+// BUSCA POR ISBN
 // ============================================
 
 async function buscarPorISBN(isbn) {
@@ -1543,27 +2046,33 @@ function adicionarBuscaPorISBN() {
 }
 
 // ============================================
-// OBSERVADOR PARA NOVOS LIVROS (CORRIGIDO)
+// OBSERVADOR PARA NOVOS LIVROS
 // ============================================
 
 function iniciarObservadorDeLivros() {
     const gradeLivros = document.getElementById('gradeLivrosRecentes');
     if (gradeLivros) {
         const observer = new MutationObserver(function (mutations) {
+            let precisaAtualizar = false;
+
             mutations.forEach(function (mutation) {
                 if (mutation.type === 'childList') {
                     mutation.addedNodes.forEach(function (node) {
                         if (node.nodeType === 1 && node.classList?.contains('cartao-livro')) {
                             if (!node.hasAttribute('data-processado')) {
-                                setTimeout(() => {
-                                    processarLivrosHTMLExistentes();
-                                    atualizarTodasEstatisticas();
-                                }, 100);
+                                precisaAtualizar = true;
                             }
                         }
                     });
                 }
             });
+
+            if (precisaAtualizar) {
+                setTimeout(() => {
+                    processarLivrosHTMLExistentes();
+                    atualizarTodasEstatisticas();
+                }, 200);
+            }
         });
 
         observer.observe(gradeLivros, {childList: true, subtree: true});
