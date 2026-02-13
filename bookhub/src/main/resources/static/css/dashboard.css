@@ -1,0 +1,107 @@
+.painel-dashboard {
+    background: var(--branco);
+    border-radius: var(--raio-borda);
+    padding: 25px;
+    box-shadow: var(--sombra-suave);
+    height: auto;
+    margin-bottom: 24px;
+    flex: 1 1 auto;
+}
+
+.painel-cabecalho h3 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 25px;
+    color: var(--texto-principal);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.lista-amigos {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.amigo-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px 0;
+    border-bottom: 1px solid #f1f1f1;
+}
+
+.amigo-item:last-child {
+    border-bottom: none;
+}
+
+.avatar-placeholder {
+    width: 45px;
+    height: 45px;
+    background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+}
+
+.amigo-item strong {
+    display: block;
+    font-size: 0.95rem;
+    color: var(--texto-principal);
+}
+
+.amigo-item span {
+    font-size: 0.8rem;
+    color: var(--texto-secundario);
+}
+
+.sem-livros {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.sem-livros i {
+    font-size: 3rem;
+    color: #ddd;
+    margin-bottom: 15px;
+}
+
+.sem-livros h5 {
+    color: var(--texto-secundario);
+    margin-bottom: 10px;
+}
+
+.sem-livros p {
+    color: #b2bec3;
+    font-size: 0.9rem;
+}
+
+.sem-livros-filtro {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 40px 20px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 20px;
+    margin: 20px 0;
+}
+
+.sem-livros-filtro i {
+    font-size: 3rem;
+    color: #b2bec3;
+    margin-bottom: 15px;
+}
+
+.sem-livros-filtro h5 {
+    color: var(--texto-secundario);
+    margin-bottom: 10px;
+}
+
+.sem-livros-filtro p {
+    color: #95a5a6;
+    font-size: 0.9rem;
+}

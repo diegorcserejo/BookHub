@@ -7,11 +7,10 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="main.css">
 </head>
 <body>
 <div class="layout-principal">
-    <!-- só a navegação mesmo -->
     <nav class="navbar barra-navegacao-estilizada">
         <div class="container-fluid d-flex justify-content-between align-items-center">
             <a class="navbar-brand texto-branco" href="#">
@@ -26,7 +25,6 @@
     </nav>
 
     <main class="container-fluid conteudo-principal mt-4">
-        <!-- cards de estatística -->
         <div class="row g-4">
             <div class="col-12 col-sm-6 col-xl-3">
                 <div class="cartao-estatistica gradiente-roxo">
@@ -94,139 +92,7 @@
                     </div>
                     <div class="painel-corpo">
                         <div class="grade-livros" id="gradeLivrosRecentes">
-                            <!-- exemplos fixos pra não ficar vazio -->
-                            <div class="cartao-livro">
-                                <div class="capa-container">
-                                    <img src="imgs/Estou feliz que minha mãe morreu.jpg" alt="Capa" class="capa-imagem">
-                                    <span class="etiqueta-status lendo">Lendo</span>
-                                </div>
-                                <div class="detalhes-livro">
-                                    <h6>Estou feliz que minha mãe morreu</h6>
-                                    <p>Jennette McCurdy</p>
-                                    <span class="genero-livro">Biografia</span>
-                                </div>
-                            </div>
-                            <div class="cartao-livro">
-                                <div class="capa-container">
-                                    <img src="imgs/A%20Empregada.jpg" alt="Capa" class="capa-imagem">
-                                    <span class="etiqueta-status lendo">Lendo</span>
-                                </div>
-                                <div class="detalhes-livro">
-                                    <h6>A empregada - Livro 1</h6>
-                                    <p>Freida McFadden</p>
-                                    <span class="genero-livro">Suspense</span>
-                                </div>
-                            </div>
-                            <div class="cartao-livro">
-                                <div class="capa-container">
-                                    <img src="imgs/A%20Empregada%202.jpg" alt="Capa" class="capa-imagem">
-                                    <span class="etiqueta-status lendo">Lendo</span>
-                                </div>
-                                <div class="detalhes-livro">
-                                    <h6>O segredo da empregada - Livro 2</h6>
-                                    <p>Freida McFadden</p>
-                                    <span class="genero-livro">Suspense</span>
-                                </div>
-                            </div>
-                            <div class="cartao-livro">
-                                <div class="capa-container">
-                                    <img src="imgs/A%20Empregada%203.jpg" alt="Capa" class="capa-imagem">
-                                    <span class="etiqueta-status lendo">Lendo</span>
-                                </div>
-                                <div class="detalhes-livro">
-                                    <h6>A empregada está de olho - Livro 3</h6>
-                                    <p>Freida McFadden</p>
-                                    <span class="genero-livro">Suspense</span>
-                                </div>
-                            </div>
-                            <div class="cartao-livro">
-                                <div class="capa-container">
-                                    <img src="imgs/13Reasonswhy.jpg" alt="Capa" class="capa-imagem">
-                                    <span class="etiqueta-status lendo">Lendo</span>
-                                </div>
-                                <div class="detalhes-livro">
-                                    <h6>13 Reasons Why</h6>
-                                    <p>Jay Asher</p>
-                                    <span class="genero-livro">Drama</span>
-                                </div>
-                            </div>
-                            <div class="cartao-livro">
-                                <div class="capa-container">
-                                    <img src="imgs/Harry1.jpg" alt="Capa" class="capa-imagem">
-                                    <span class="etiqueta-status lendo">Lendo</span>
-                                </div>
-                                <div class="detalhes-livro">
-                                    <h6>Harry Potter e a Pedra Filosofal: 1</h6>
-                                    <p>J.K. Rowling</p>
-                                    <span class="genero-livro">Fantasia</span>
-                                </div>
-                            </div>
-                            <div class="cartao-livro">
-                                <div class="capa-container">
-                                    <img src="imgs/Harry2.jpg" alt="Capa" class="capa-imagem">
-                                    <span class="etiqueta-status lendo">Lendo</span>
-                                </div>
-                                <div class="detalhes-livro">
-                                    <h6>Harry Potter e a Câmara Secreta: 2</h6>
-                                    <p>J.K. Rowling</p>
-                                    <span class="genero-livro">Fantasia</span>
-                                </div>
-                            </div>
-                            <div class="cartao-livro">
-                                <div class="capa-container">
-                                    <img src="imgs/Harry3.jpg" alt="Capa" class="capa-imagem">
-                                    <span class="etiqueta-status lendo">Lendo</span>
-                                </div>
-                                <div class="detalhes-livro">
-                                    <h6>Harry Potter e o Prisioneiro de Azkaban: 3</h6>
-                                    <p>J.K. Rowling</p>
-                                    <span class="genero-livro">Fantasia</span>
-                                </div>
-                            </div>
-                            <div class="cartao-livro">
-                                <div class="capa-container">
-                                    <img src="imgs/Harry4.jpg" alt="Capa" class="capa-imagem">
-                                    <span class="etiqueta-status lendo">Lendo</span>
-                                </div>
-                                <div class="detalhes-livro">
-                                    <h6>Harry Potter e o Cálice de Fogo: 4</h6>
-                                    <p>J.K. Rowling</p>
-                                    <span class="genero-livro">Fantasia</span>
-                                </div>
-                            </div>
-                            <div class="cartao-livro">
-                                <div class="capa-container">
-                                    <img src="imgs/Harry5.jpg" alt="Capa" class="capa-imagem">
-                                    <span class="etiqueta-status lendo">Lendo</span>
-                                </div>
-                                <div class="detalhes-livro">
-                                    <h6>Harry Potter e a Ordem da Fênix: 5</h6>
-                                    <p>J.K. Rowling</p>
-                                    <span class="genero-livro">Fantasia</span>
-                                </div>
-                            </div>
-                            <div class="cartao-livro">
-                                <div class="capa-container">
-                                    <img src="imgs/Harry6.jpg" alt="Capa" class="capa-imagem">
-                                    <span class="etiqueta-status lendo">Lendo</span>
-                                </div>
-                                <div class="detalhes-livro">
-                                    <h6>Harry Potter e o Enigma do Príncipe: 6</h6>
-                                    <p>J.K. Rowling</p>
-                                    <span class="genero-livro">Fantasia</span>
-                                </div>
-                            </div>
-                            <div class="cartao-livro">
-                                <div class="capa-container">
-                                    <img src="imgs/Harry7.jpg" alt="Capa" class="capa-imagem">
-                                    <span class="etiqueta-status lendo">Lendo</span>
-                                </div>
-                                <div class="detalhes-livro">
-                                    <h6>Harry Potter e as Relíquias da Morte: 7</h6>
-                                    <p>J.K. Rowling</p>
-                                    <span class="genero-livro">Fantasia</span>
-                                </div>
-                            </div>
+                            <!-- Os livros serão inseridos aqui pelo JavaScript -->
                         </div>
                     </div>
                 </div>
@@ -257,6 +123,7 @@
                 </div>
             </div>
         </div>
+    </main>
 </div>
 
 <!-- formulário pra adicionar livro -->
@@ -497,19 +364,30 @@
     </div>
 </div>
 
+<!-- avaliação -->
+<div class="modal fade" id="modalAvaliacao" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content modal-estilizado">
+            <div class="modal-header border-0">
+                <h5 class="modal-title">Avaliar Livro</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div id="avaliacaoLivroAtual" class="mb-3"></div>
+                <div class="estrelas-avaliacao mb-3" id="estrelasModal">
+                    <i class="bi bi-star" data-nota="1"></i>
+                    <i class="bi bi-star" data-nota="2"></i>
+                    <i class="bi bi-star" data-nota="3"></i>
+                    <i class="bi bi-star" data-nota="4"></i>
+                    <i class="bi bi-star" data-nota="5"></i>
+                </div>
+                <p class="text-muted small">Clique nas estrelas para avaliar</p>
+                <button class="btn btn-success btn-sm" id="salvarAvaliacao" data-bs-dismiss="modal">Salvar</button>
+            </div>
+        </div>
+    </div>
+</div>
 <script src="app.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-
-<!-- IDEIAS
-
-2.Conectar com Google Books ou Open Library para buscar capas, sinopses e ISBN automaticamente.
-
-3.Sistema de empréstimo entre amigos com data de devolução e lembretes.
-Histórico de empréstimos.
-
-4. Permitir notas (1–5 estrelas) e resenhas para cada livro.
-Seção de comentários nos perfis dos amigos.
-
-5. Busca de filtro por título, autor, gênero, ano. -->

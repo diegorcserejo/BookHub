@@ -1,198 +1,459 @@
 let livros = [];
 let statusSelecionado = 'todos';
 let generoSelecionado = 'todos';
+let livroSelecionadoParaAvaliacao = null;
 
 const statusMap = {
-    'WANT_TO_READ': { front: 'desejado', label: 'Desejado', color: 'desejado' },
-    'READING': { front: 'lendo', label: 'Lendo', color: 'lendo' },
-    'READ': { front: 'lido', label: 'Lido', color: 'lido' },
-    'BORROWED': { front: 'emprestado', label: 'Emprestado', color: 'emprestado' }
+    'WANT_TO_READ': {front: 'desejado', label: 'Desejado', color: 'desejado'},
+    'READING': {front: 'lendo', label: 'Lendo', color: 'lendo'},
+    'READ': {front: 'lido', label: 'Lido', color: 'lido'},
+    'BORROWED': {front: 'emprestado', label: 'Emprestado', color: 'emprestado'}
 };
 
 // ============================================
 // INICIALIZAÇÃO
 // ============================================
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     inicializarEventos();
     inicializarLivros();
-    atualizarEstatisticas();
+    processarLivrosHTMLExistentes();
+    atualizarTodasEstatisticas(); // Usar uma única função para atualizar tudo
     adicionarFiltros();
     adicionarFiltrosGenero();
     inicializarPerfilUsuario();
     adicionarBuscaAutomaticaAoFormulario();
     adicionarBuscaPorISBN();
     inicializarModalSinopse();
-    console.log('📚 BookHub carregado com botão de sinopse!');
+    inicializarSistemaAvaliacao();
+    iniciarObservadorDeLivros();
+    console.log('📚 BookHub carregado com estatísticas corrigidas!');
 });
 
 // ============================================
-// MODAL DE SINOPSE
+// FUNÇÃO CORRIGIDA: RENDERIZAR ESTRELAS
 // ============================================
 
-let modalSinopseInstance = null;
+function renderizarEstrelas(avaliacao = 0) {
+    let estrelasHTML = '<div class="estrelas-pequenas">';
+    for (let i = 1; i <= 5; i++) {
+        if (i <= avaliacao) {
+            estrelasHTML += '<i class="bi bi-star-fill"></i>';
+        } else {
+            estrelasHTML += '<i class="bi bi-star"></i>';
+        }
+    }
+    estrelasHTML += '</div>';
+    return estrelasHTML;
+}
 
-function inicializarModalSinopse() {
-    const modalSinopseEl = document.getElementById('modalSinopse');
-    if (modalSinopseEl) {
-        modalSinopseInstance = new bootstrap.Modal(modalSinopseEl);
+// ============================================
+// FUNÇÃO CORRIGIDA: OBTER TODOS OS LIVROS (SEM DUPLICAÇÃO)
+// ============================================
+
+function obterTodosOsLivros() {
+    // Usar apenas o array livros como fonte da verdade
+    // O array livros já contém todos os livros (tanto HTML quanto JS)
+    return livros.map(livro => ({
+        ...livro,
+        // Garantir que todos os campos necessários existam
+        statusFront: livro.statusFront || 'lendo',
+        avaliacao: livro.avaliacao || 0,
+        genero: livro.genero || 'Outros',
+        ano: livro.ano || new Date().getFullYear()
+    }));
+}
+
+// ============================================
+// FUNÇÃO CORRIGIDA: PROCESSAR LIVROS HTML
+// ============================================
+
+function processarLivrosHTMLExistentes() {
+    const livrosHTML = document.querySelectorAll('#gradeLivrosRecentes .cartao-livro:not([data-processado])');
+
+    livrosHTML.forEach((cartao, index) => {
+        // Verificar se já foi processado
+        if (cartao.hasAttribute('data-processado')) return;
+
+        cartao.setAttribute('data-processado', 'true');
+        cartao.setAttribute('data-tipo', 'html');
+
+        // Gerar ID único
+        const livroId = `html-${Date.now()}-${index}-${Math.random()}`;
+        cartao.setAttribute('data-id', livroId);
+
+        // Extrair informações
+        const titulo = cartao.querySelector('.detalhes-livro h6')?.textContent?.trim() || 'Título desconhecido';
+        const autor = cartao.querySelector('.detalhes-livro p')?.textContent?.trim() || 'Autor desconhecido';
+
+        // Tentar encontrar o gênero em diferentes lugares
+        let genero = 'Outros';
+        const generoElement = cartao.querySelector('.genero-livro');
+        if (generoElement) {
+            genero = generoElement.textContent?.trim() || 'Outros';
+        }
+
+        const capa = cartao.querySelector('.capa-imagem')?.src || '';
+
+        // Determinar status
+        const etiqueta = cartao.querySelector('.etiqueta-status');
+        let statusAtual = 'lendo';
+        let statusLabel = 'Lendo';
+
+        if (etiqueta) {
+            if (etiqueta.classList.contains('lido')) {
+                statusAtual = 'lido';
+                statusLabel = 'Lido';
+            } else if (etiqueta.classList.contains('desejado')) {
+                statusAtual = 'desejado';
+                statusLabel = 'Desejado';
+            } else if (etiqueta.classList.contains('emprestado')) {
+                statusAtual = 'emprestado';
+                statusLabel = 'Emprestado';
+            }
+        }
+
+        // Verificar se já existe no array (evitar duplicação)
+        const existe = livros.some(l => l.id === livroId ||
+            (l.titulo === titulo && l.autor === autor && l.isHTML));
+
+        if (!existe) {
+            const livroObj = {
+                id: livroId,
+                titulo: titulo,
+                autor: autor,
+                statusFront: statusAtual,
+                statusLabel: statusLabel,
+                statusColor: statusAtual,
+                status: mapearStatusParaBackend(statusAtual),
+                coverUrl: capa || null,
+                genero: genero,
+                avaliacao: 0,
+                isHTML: true,
+                ano: new Date().getFullYear() - Math.floor(Math.random() * 5) // Ano variado para teste
+            };
+            livros.push(livroObj);
+        }
+
+        modificarEstruturaCardSemEstrelas(cartao, livroObj);
+    });
+}
+
+// ============================================
+// FUNÇÃO CORRIGIDA: MODIFICAR ESTRUTURA DO CARD
+// ============================================
+
+function modificarEstruturaCardSemEstrelas(cartao, livro) {
+    const capaContainer = cartao.querySelector('.capa-container');
+    const detalhesLivro = cartao.querySelector('.detalhes-livro');
+
+    if (!capaContainer || !detalhesLivro) return;
+
+    // Remover controles antigos
+    const controlesAntigos = capaContainer.querySelector('.controles-livro');
+    if (controlesAntigos) controlesAntigos.remove();
+
+    // Adicionar novos controles
+    const controlesHTML = `
+        <div class="controles-livro">
+            <button class="btn-controle btn-mudar-status-html" title="Mudar status">
+                <i class="bi bi-arrow-repeat"></i>
+            </button>
+            <button class="btn-controle btn-avaliar-html" title="Avaliar livro">
+                <i class="bi bi-star"></i>
+            </button>
+            <button class="btn-controle btn-remover-html" title="Remover livro">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    `;
+    capaContainer.insertAdjacentHTML('beforeend', controlesHTML);
+
+    // Adicionar botão de sinopse
+    let sinopseBtn = capaContainer.querySelector('.btn-sinopse');
+    if (!sinopseBtn) {
+        sinopseBtn = document.createElement('button');
+        sinopseBtn.className = 'btn-sinopse';
+        sinopseBtn.title = 'Ver sinopse';
+        sinopseBtn.innerHTML = '<i class="bi bi-file-text"></i>';
+        sinopseBtn.style.position = 'absolute';
+        sinopseBtn.style.top = '10px';
+        sinopseBtn.style.right = '10px';
+        sinopseBtn.style.left = 'auto';
+        sinopseBtn.style.bottom = 'auto';
+        capaContainer.appendChild(sinopseBtn);
+    }
+
+    // Adicionar container de estrelas
+    let estrelasContainer = detalhesLivro.querySelector('.estrelas-container');
+    if (!estrelasContainer) {
+        estrelasContainer = document.createElement('div');
+        estrelasContainer.className = 'estrelas-container';
+        estrelasContainer.style.marginBottom = '8px';
+        estrelasContainer.style.display = 'flex';
+        estrelasContainer.style.justifyContent = 'center';
+
+        const titulo = detalhesLivro.querySelector('h6');
+        if (titulo) {
+            titulo.parentNode.insertBefore(estrelasContainer, titulo);
+        } else {
+            detalhesLivro.insertBefore(estrelasContainer, detalhesLivro.firstChild);
+        }
+    }
+    estrelasContainer.innerHTML = renderizarEstrelas(livro.avaliacao || 0);
+
+    // Event listeners
+    capaContainer.querySelector('.btn-mudar-status-html').addEventListener('click', (e) => {
+        e.stopPropagation();
+        mudarStatusLivroHTML(cartao, livro);
+    });
+
+    capaContainer.querySelector('.btn-avaliar-html').addEventListener('click', (e) => {
+        e.stopPropagation();
+        livroSelecionadoParaAvaliacao = livro.id;
+        const modal = new bootstrap.Modal(document.getElementById('modalAvaliacao'));
+        modal.show();
+    });
+
+    capaContainer.querySelector('.btn-remover-html').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (confirm(`Tem certeza que deseja remover "${livro.titulo}"?`)) {
+            removerLivroHTML(cartao, livro.id);
+        }
+    });
+
+    sinopseBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        abrirSinopse(
+            livro.titulo,
+            livro.autor,
+            livro.coverUrl,
+            livro.genero,
+            livro.statusLabel
+        );
+    });
+}
+
+// ============================================
+// SISTEMA DE AVALIAÇÃO POR ESTRELAS
+// ============================================
+
+function inicializarSistemaAvaliacao() {
+    document.querySelectorAll('#estrelasModal i').forEach(estrela => {
+        estrela.addEventListener('click', function () {
+            const nota = parseInt(this.dataset.nota);
+            selecionarEstrelas(nota);
+        });
+
+        estrela.addEventListener('mouseover', function () {
+            const nota = parseInt(this.dataset.nota);
+            destacarEstrelas(nota);
+        });
+
+        estrela.addEventListener('mouseout', function () {
+            restaurarEstrelas();
+        });
+    });
+
+    const btnSalvar = document.getElementById('salvarAvaliacao');
+    if (btnSalvar) {
+        btnSalvar.addEventListener('click', function () {
+            salvarAvaliacao();
+        });
+    }
+
+    const modalAvaliacao = document.getElementById('modalAvaliacao');
+    if (modalAvaliacao) {
+        modalAvaliacao.addEventListener('show.bs.modal', function () {
+            carregarAvaliacaoNoModal();
+        });
     }
 }
 
-async function abrirSinopse(titulo, autor, capa, genero, status) {
-    try {
-        // Mostrar loading
-        document.getElementById('sinopseCapa').innerHTML = `<div class="sinopse-loading"><div class="spinner-border spinner-border-sm"></div></div>`;
-        document.getElementById('sinopseInfo').innerHTML = `<h3>${titulo}</h3><p>${autor}</p>`;
-        document.getElementById('sinopseConteudo').innerHTML = `
-            <div class="sinopse-loading">
-                <div class="spinner-border spinner-border-sm" role="status"></div>
-                <span>Buscando sinopse...</span>
-            </div>
-        `;
-
-        modalSinopseInstance.show();
-
-        // Buscar sinopse
-        const livroInfo = await buscarLivroInfo(titulo, autor);
-
-        // Atualizar capa
-        let capaHTML = '';
-        if (capa && capa !== '') {
-            capaHTML = `<img src="${capa}" alt="${titulo}" onerror="this.onerror=null; this.src='https://via.placeholder.com/80x120?text=Sem+Capa';">`;
-        } else if (livroInfo?.capaPrincipal) {
-            capaHTML = `<img src="${livroInfo.capaPrincipal}" alt="${titulo}" onerror="this.onerror=null; this.src='https://via.placeholder.com/80x120?text=Sem+Capa';">`;
+function selecionarEstrelas(nota) {
+    const estrelas = document.querySelectorAll('#estrelasModal i');
+    estrelas.forEach((estrela, index) => {
+        if (index < nota) {
+            estrela.className = 'bi bi-star-fill';
         } else {
-            capaHTML = `<div style="width:100%;height:100%;background:linear-gradient(135deg,#6c5ce7,#a29bfe);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;">${titulo.substring(0,2)}</div>`;
+            estrela.className = 'bi bi-star';
         }
-        document.getElementById('sinopseCapa').innerHTML = capaHTML;
+    });
 
-        // Atualizar informações
-        document.getElementById('sinopseInfo').innerHTML = `
-            <h3>${titulo}</h3>
-            <p><i class="bi bi-pencil"></i> ${autor}</p>
-            <span style="display:inline-block;background:rgba(255,255,255,0.2);padding:4px 12px;border-radius:20px;font-size:0.8rem;">
-                <i class="bi bi-tag"></i> ${genero || 'Não especificado'}
-            </span>
-            <span style="display:inline-block;background:${getStatusColor(status)};padding:4px 12px;border-radius:20px;font-size:0.8rem;margin-left:8px;">
-                <i class="bi bi-bookmark"></i> ${status}
-            </span>
-        `;
+    document.getElementById('estrelasModal').dataset.notaSelecionada = nota;
+}
 
-        // Atualizar sinopse
-        let sinopseHTML = '';
-        if (livroInfo?.sinopse) {
-            sinopseHTML = `<div class="sinopse-texto">${livroInfo.sinopse}</div>`;
-
-            // Adicionar fonte
-            if (livroInfo.googleBooksId) {
-                sinopseHTML += `<div class="fonte-badge"><i class="bi bi-google"></i> Fonte: Google Books</div>`;
-            } else if (livroInfo.openLibraryId) {
-                sinopseHTML += `<div class="fonte-badge"><i class="bi bi-book"></i> Fonte: Open Library</div>`;
-            }
-
-            // Adicionar ISBN se tiver
-            if (livroInfo.isbn) {
-                sinopseHTML += `<div style="margin-top:10px;font-size:0.8rem;color:#636e72;"><i class="bi bi-upc-scan"></i> ISBN: ${livroInfo.isbn}</div>`;
-            }
+function destacarEstrelas(nota) {
+    const estrelas = document.querySelectorAll('#estrelasModal i');
+    estrelas.forEach((estrela, index) => {
+        if (index < nota) {
+            estrela.style.color = '#ffd700';
         } else {
-            sinopseHTML = `<div class="sinopse-texto text-muted"><i class="bi bi-info-circle"></i> Sinopse não disponível para este livro.</div>`;
-        }
-
-        document.getElementById('sinopseConteudo').innerHTML = sinopseHTML;
-
-    } catch (error) {
-        console.error('Erro ao buscar sinopse:', error);
-        document.getElementById('sinopseConteudo').innerHTML = `
-            <div class="sinopse-texto text-muted">
-                <i class="bi bi-exclamation-triangle"></i> 
-                Erro ao carregar sinopse. Tente novamente.
-            </div>
-        `;
-    }
-}
-
-function getStatusColor(status) {
-    const cores = {
-        'Lendo': '#6c5ce7',
-        'Lido': '#00b894',
-        'Emprestado': '#0984e3',
-        'Desejado': '#e17055'
-    };
-    return cores[status] || '#6c5ce7';
-}
-
-// ============================================
-// FUNÇÕES PRINCIPAIS DE LIVROS
-// ============================================
-
-function inicializarLivros() {
-    const livrosSalvos = localStorage.getItem('bookHubLivrosNovos');
-    livros = livrosSalvos ? JSON.parse(livrosSalvos) : [];
-    renderizarNovosLivros();
-    adicionarControlesLivrosHTML();
-}
-
-function adicionarControlesLivrosHTML() {
-    const livrosHTML = document.querySelectorAll('#gradeLivrosRecentes .cartao-livro:not([data-id-js])');
-    livrosHTML.forEach(cartao => {
-        const capaContainer = cartao.querySelector('.capa-container');
-        if (capaContainer && !capaContainer.querySelector('.controles-livro')) {
-            const controlesHTML = `<div class="controles-livro">
-                <button class="btn-controle btn-mudar-status" title="Mudar status">
-                    <i class="bi bi-arrow-repeat"></i>
-                </button>
-            </div>`;
-            capaContainer.insertAdjacentHTML('beforeend', controlesHTML);
-
-            const btnMudarStatus = capaContainer.querySelector('.btn-mudar-status');
-            if (btnMudarStatus) {
-                btnMudarStatus.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    const etiqueta = capaContainer.querySelector('.etiqueta-status');
-                    if (etiqueta) mudarStatusLivroHTML(etiqueta);
-                });
-            }
-        }
-
-        // Adicionar botão de sinopse se não existir
-        if (capaContainer && !capaContainer.querySelector('.btn-sinopse')) {
-            const sinopseBtn = document.createElement('button');
-            sinopseBtn.className = 'btn-sinopse';
-            sinopseBtn.title = 'Ver sinopse';
-            sinopseBtn.innerHTML = '<i class="bi bi-file-text"></i>';
-
-            sinopseBtn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                const titulo = cartao.querySelector('.titulo-livro, .detalhes-livro h6, h6')?.textContent?.trim() || 'Título desconhecido';
-                const autor = cartao.querySelector('.autor-livro, p')?.textContent?.trim() || 'Autor desconhecido';
-                const capa = cartao.querySelector('.capa-imagem')?.src || '';
-                const genero = cartao.querySelector('.genero-livro')?.textContent || 'Não especificado';
-                const statusEl = cartao.querySelector('.etiqueta-status');
-                const status = statusEl?.textContent?.trim() || 'Desconhecido';
-
-                abrirSinopse(titulo, autor, capa, genero, status);
-            });
-
-            capaContainer.appendChild(sinopseBtn);
+            estrela.style.color = '#ddd';
         }
     });
 }
 
-function mudarStatusLivroHTML(etiqueta) {
+function restaurarEstrelas() {
+    const estrelas = document.querySelectorAll('#estrelasModal i');
+    const notaSelecionada = document.getElementById('estrelasModal').dataset.notaSelecionada;
+
+    estrelas.forEach((estrela, index) => {
+        if (notaSelecionada && index < parseInt(notaSelecionada)) {
+            estrela.style.color = '#ffd700';
+        } else {
+            estrela.style.color = '#ddd';
+        }
+    });
+}
+
+function carregarAvaliacaoNoModal() {
+    if (!livroSelecionadoParaAvaliacao) return;
+
+    const livro = livros.find(l => l.id === livroSelecionadoParaAvaliacao);
+    if (!livro) return;
+
+    const titulo = livro.titulo;
+    const avaliacaoAtual = livro.avaliacao || 0;
+
+    const estrelas = document.querySelectorAll('#estrelasModal i');
+    estrelas.forEach((estrela, index) => {
+        if (index < avaliacaoAtual) {
+            estrela.className = 'bi bi-star-fill';
+        } else {
+            estrela.className = 'bi bi-star';
+        }
+    });
+
+    document.getElementById('estrelasModal').dataset.notaSelecionada = avaliacaoAtual;
+    document.getElementById('avaliacaoLivroAtual').innerHTML = `
+        <strong>${titulo}</strong><br>
+        <small class="text-muted">Avaliação atual: ${avaliacaoAtual}/5</small>
+    `;
+}
+
+function salvarAvaliacao() {
+    if (!livroSelecionadoParaAvaliacao) return;
+
+    const notaSelecionada = parseInt(document.getElementById('estrelasModal').dataset.notaSelecionada || '0');
+    const livro = livros.find(l => l.id === livroSelecionadoParaAvaliacao);
+
+    if (livro) {
+        livro.avaliacao = notaSelecionada;
+
+        // Atualizar UI
+        const card = document.querySelector(`[data-id="${livroSelecionadoParaAvaliacao}"]`);
+        if (card) {
+            const estrelasContainer = card.querySelector('.estrelas-container');
+            if (estrelasContainer) {
+                estrelasContainer.innerHTML = renderizarEstrelas(notaSelecionada);
+            }
+        }
+
+        salvarNoLocalStorage();
+        atualizarTodasEstatisticas();
+        mostrarToast(`✅ Livro avaliado com ${notaSelecionada} estrela${notaSelecionada !== 1 ? 's' : ''}!`);
+    }
+}
+
+function atualizarAvaliacaoMedia() {
+    const todosLivros = obterTodosOsLivros();
+    const livrosComAvaliacao = todosLivros.filter(l => l.avaliacao && l.avaliacao > 0);
+
+    if (livrosComAvaliacao.length === 0) {
+        document.getElementById('avaliacaoMedia').textContent = '0';
+        return;
+    }
+
+    const soma = livrosComAvaliacao.reduce((acc, livro) => acc + livro.avaliacao, 0);
+    const media = (soma / livrosComAvaliacao.length).toFixed(1);
+    document.getElementById('avaliacaoMedia').textContent = media;
+}
+
+function mostrarToast(mensagem) {
+    const toast = document.createElement('div');
+    toast.className = 'alert alert-success position-fixed bottom-0 end-0 m-3';
+    toast.style.zIndex = '9999';
+    toast.style.animation = 'slideIn 0.3s ease';
+    toast.innerHTML = `<i class="bi bi-check-circle-fill"></i> ${mensagem}`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+// ============================================
+// FUNÇÕES PARA LIVROS HTML
+// ============================================
+
+function mudarStatusLivroHTML(cartao, livro) {
     const statusOrder = ['lendo', 'lido', 'desejado', 'emprestado'];
-    const statusAtual = etiqueta.className.split(' ')[1];
-    const nextIndex = (statusOrder.indexOf(statusAtual) + 1) % statusOrder.length;
+    const statusLabels = {'lendo': 'Lendo', 'lido': 'Lido', 'desejado': 'Desejado', 'emprestado': 'Emprestado'};
+
+    const nextIndex = (statusOrder.indexOf(livro.statusFront) + 1) % statusOrder.length;
     const novoStatus = statusOrder[nextIndex];
-    etiqueta.className = `etiqueta-status ${novoStatus}`;
-    const statusLabels = {'lendo':'Lendo','lido':'Lido','desejado':'Desejado','emprestado':'Emprestado'};
-    etiqueta.textContent = statusLabels[novoStatus];
-    atualizarEstatisticas();
+
+    livro.statusFront = novoStatus;
+    livro.statusLabel = statusLabels[novoStatus];
+    livro.statusColor = novoStatus;
+    livro.status = mapearStatusParaBackend(novoStatus);
+
+    const etiqueta = cartao.querySelector('.etiqueta-status');
+    if (etiqueta) {
+        etiqueta.className = `etiqueta-status ${novoStatus}`;
+        etiqueta.textContent = statusLabels[novoStatus];
+    }
+
+    salvarNoLocalStorage();
     atualizarTodasEstatisticas();
+    mostrarToast(`📖 Status alterado para: ${statusLabels[novoStatus]}`);
+}
+
+function removerLivroHTML(cartao, livroId) {
+    const index = livros.findIndex(l => l.id === livroId);
+    if (index !== -1) {
+        livros.splice(index, 1);
+    }
+
+    cartao.remove();
+
+    salvarNoLocalStorage();
+    atualizarTodasEstatisticas();
+    atualizarFiltrosGenero();
+
+    mostrarToast('🗑️ Livro removido com sucesso!');
+}
+
+// ============================================
+// FUNÇÕES PRINCIPAIS DE LIVROS (JS)
+// ============================================
+
+function inicializarLivros() {
+    const livrosSalvos = localStorage.getItem('bookHubLivrosNovos');
+    if (livrosSalvos) {
+        try {
+            livros = JSON.parse(livrosSalvos);
+        } catch (e) {
+            livros = [];
+        }
+    } else {
+        livros = [];
+    }
+
+    livros = livros.map(livro => ({
+        ...livro,
+        avaliacao: livro.avaliacao || 0,
+        ano: livro.ano || new Date().getFullYear() - Math.floor(Math.random() * 5),
+        statusFront: livro.statusFront || livro.status || 'lendo',
+        statusLabel: livro.statusLabel || (livro.status === 'READ' ? 'Lido' :
+            livro.status === 'READING' ? 'Lendo' :
+                livro.status === 'BORROWED' ? 'Emprestado' : 'Desejado'),
+        statusColor: livro.statusColor || livro.statusFront || 'lendo'
+    }));
+
+    renderizarNovosLivros();
 }
 
 function inicializarEventos() {
-    document.querySelectorAll('.btn-status').forEach(btn => btn.addEventListener('click', function() {
+    document.querySelectorAll('.btn-status').forEach(btn => btn.addEventListener('click', function () {
         document.querySelectorAll('.btn-status').forEach(b => b.classList.remove('active'));
         this.classList.add('active');
         document.getElementById('statusLivro').value = this.dataset.status;
@@ -200,28 +461,42 @@ function inicializarEventos() {
 
     const formulario = document.getElementById('formularioLivro');
     if (formulario) {
-        formulario.addEventListener('submit', function(e) {
+        formulario.addEventListener('submit', function (e) {
             e.preventDefault();
             const titulo = document.getElementById('tituloLivro').value.trim();
             const autor = document.getElementById('autorLivro').value.trim();
             const status = document.getElementById('statusLivro').value;
             const capa = document.getElementById('capaLivro').value.trim();
-            const genero = document.getElementById('generoLivro')?.value || '';
+            const genero = document.getElementById('generoLivro')?.value || 'Outros';
+
             if (!titulo || !autor) {
                 alert('Por favor, preencha título e autor');
                 return;
             }
+
             const statusBackend = mapearStatusParaBackend(status);
             const statusInfo = mapearStatusParaFront(statusBackend);
+
             const novoLivro = {
-                id: Date.now(), titulo, autor, status: statusBackend,
-                statusFront: status, statusLabel: statusInfo.label,
-                statusColor: statusInfo.color, coverUrl: capa || null,
-                genero: genero || 'Outros'
+                id: Date.now(),
+                titulo,
+                autor,
+                status: statusBackend,
+                statusFront: status,
+                statusLabel: statusInfo.label,
+                statusColor: statusInfo.color,
+                coverUrl: capa || null,
+                genero: genero,
+                avaliacao: 0,
+                isHTML: false,
+                ano: new Date().getFullYear()
             };
+
             adicionarLivro(novoLivro);
+
             this.reset();
             document.querySelector('.btn-status[data-status="lendo"]').click();
+
             const modalEl = document.getElementById('modalLivro');
             const modal = bootstrap.Modal.getInstance(modalEl);
             if (modal) modal.hide();
@@ -230,32 +505,26 @@ function inicializarEventos() {
 }
 
 function mapearStatusParaBackend(statusFront) {
-    const map = {'desejado':'WANT_TO_READ','lendo':'READING','lido':'READ','emprestado':'BORROWED'};
+    const map = {'desejado': 'WANT_TO_READ', 'lendo': 'READING', 'lido': 'READ', 'emprestado': 'BORROWED'};
     return map[statusFront] || 'WANT_TO_READ';
 }
 
 function mapearStatusParaFront(statusBackend) {
-    return statusMap[statusBackend] || { front: 'desejado', label: 'Desejado', color: 'desejado' };
+    return statusMap[statusBackend] || {front: 'desejado', label: 'Desejado', color: 'desejado'};
 }
 
-function renderizarNovosLivros() {
-    const container = document.getElementById('gradeLivrosRecentes');
-    if (!container) return;
-    const livrosFiltrados = livros.filter(livro => {
-        const statusMatch = statusSelecionado === 'todos' || livro.statusFront === statusSelecionado;
-        const generoMatch = generoSelecionado === 'todos' || (livro.genero && livro.genero.toLowerCase() === generoSelecionado.toLowerCase());
-        return statusMatch && generoMatch;
-    });
-    document.querySelectorAll('.cartao-livro[data-id-js]').forEach(el => el.remove());
-    if (livrosFiltrados.length === 0) return;
-    livrosFiltrados.forEach(livro => container.appendChild(criarElementoLivroJS(livro)));
-}
+// ============================================
+// FUNÇÃO CORRIGIDA: CRIAR ELEMENTO LIVRO JS
+// ============================================
 
 function criarElementoLivroJS(livro) {
     const div = document.createElement('div');
     div.className = 'cartao-livro';
     div.setAttribute('data-id-js', livro.id);
+    div.setAttribute('data-id', livro.id);
     div.setAttribute('data-genero', livro.genero || 'Outros');
+    div.setAttribute('data-tipo', 'js');
+    div.setAttribute('data-processado', 'true');
 
     let capaHTML;
     if (livro.coverUrl && livro.coverUrl !== '') {
@@ -266,21 +535,30 @@ function criarElementoLivroJS(livro) {
     }
 
     div.innerHTML = `
-        <div class="capa-container">
+        <div class="capa-container" style="position: relative;">
             ${capaHTML}
             <span class="etiqueta-status ${livro.statusColor}">${livro.statusLabel}</span>
             <div class="controles-livro">
                 <button class="btn-controle btn-mudar-status-js" title="Mudar status">
                     <i class="bi bi-arrow-repeat"></i>
                 </button>
+                <button class="btn-controle btn-avaliar-js" title="Avaliar livro">
+                    <i class="bi bi-star"></i>
+                </button>
                 <button class="btn-controle btn-remover-js" title="Remover livro">
                     <i class="bi bi-trash"></i>
                 </button>
             </div>
+            <button class="btn-sinopse" title="Ver sinopse" style="position: absolute; top: 10px; right: 10px; left: auto; bottom: auto;">
+                <i class="bi bi-file-text"></i>
+            </button>
         </div>
-        <div class="detalhes-livro">
-            <h6 class="titulo-livro">${livro.titulo}</h6>
-            <p class="autor-livro">${livro.autor}</p>
+        <div class="detalhes-livro" style="text-align: center; padding: 10px 5px;">
+            <div class="estrelas-container" style="margin-bottom: 8px; display: flex; justify-content: center;">
+                ${renderizarEstrelas(livro.avaliacao)}
+            </div>
+            <h6 class="titulo-livro" style="text-align: center; margin-bottom: 5px;">${livro.titulo}</h6>
+            <p class="autor-livro" style="text-align: center; margin-bottom: 8px;">${livro.autor}</p>
             ${livro.genero ? `<span class="genero-livro">${livro.genero}</span>` : ''}
         </div>
     `;
@@ -288,21 +566,31 @@ function criarElementoLivroJS(livro) {
     if (livro.coverUrl && livro.coverUrl !== '') {
         const img = div.querySelector('img');
         if (img) {
-            img.onerror = function() {
+            img.onerror = function () {
                 const tituloAbreviado = livro.titulo.length > 15 ? livro.titulo.substring(0, 15) + '...' : livro.titulo;
                 this.parentElement.innerHTML = `<div class="capa-padrao">${tituloAbreviado}</div>`;
             };
         }
     }
 
-    // Adicionar botão de sinopse
-    const capaContainer = div.querySelector('.capa-container');
-    const sinopseBtn = document.createElement('button');
-    sinopseBtn.className = 'btn-sinopse';
-    sinopseBtn.title = 'Ver sinopse';
-    sinopseBtn.innerHTML = '<i class="bi bi-file-text"></i>';
+    div.querySelector('.btn-mudar-status-js').addEventListener('click', (e) => {
+        e.stopPropagation();
+        mudarStatusLivroJS(livro.id);
+    });
 
-    sinopseBtn.addEventListener('click', (e) => {
+    div.querySelector('.btn-avaliar-js').addEventListener('click', (e) => {
+        e.stopPropagation();
+        livroSelecionadoParaAvaliacao = livro.id;
+        const modal = new bootstrap.Modal(document.getElementById('modalAvaliacao'));
+        modal.show();
+    });
+
+    div.querySelector('.btn-remover-js').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (confirm('Tem certeza que deseja remover este livro?')) removerLivroJS(livro.id);
+    });
+
+    div.querySelector('.btn-sinopse').addEventListener('click', (e) => {
         e.stopPropagation();
         abrirSinopse(
             livro.titulo,
@@ -313,26 +601,35 @@ function criarElementoLivroJS(livro) {
         );
     });
 
-    capaContainer.appendChild(sinopseBtn);
-
-    // Eventos dos botões
-    div.querySelector('.btn-mudar-status-js').addEventListener('click', (e) => {
-        e.stopPropagation();
-        mudarStatusLivroJS(livro.id);
-    });
-
-    div.querySelector('.btn-remover-js').addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (confirm('Tem certeza que deseja remover este livro?')) removerLivroJS(livro.id);
-    });
-
     return div;
 }
 
+function renderizarNovosLivros() {
+    const container = document.getElementById('gradeLivrosRecentes');
+    if (!container) return;
+
+    const livrosJS = livros.filter(l => !l.isHTML);
+
+    const livrosFiltrados = livrosJS.filter(livro => {
+        const statusMatch = statusSelecionado === 'todos' || livro.statusFront === statusSelecionado;
+        const generoMatch = generoSelecionado === 'todos' || (livro.genero && livro.genero.toLowerCase() === generoSelecionado.toLowerCase());
+        return statusMatch && generoMatch;
+    });
+
+    document.querySelectorAll('.cartao-livro[data-tipo="js"]').forEach(el => el.remove());
+
+    livrosFiltrados.forEach(livro => {
+        const card = criarElementoLivroJS(livro);
+        container.appendChild(card);
+    });
+}
+
 function adicionarLivro(livro) {
+    livro.avaliacao = 0;
+    livro.ano = new Date().getFullYear();
+    livro.isHTML = false;
     livros.unshift(livro);
     salvarNoLocalStorage();
-    atualizarEstatisticas();
     renderizarNovosLivros();
     atualizarTodasEstatisticas();
     atualizarFiltrosGenero();
@@ -341,18 +638,22 @@ function adicionarLivro(livro) {
 function mudarStatusLivroJS(id) {
     const livro = livros.find(l => l.id === id);
     if (!livro) return;
+
     const statusOrder = ['desejado', 'lendo', 'lido', 'emprestado'];
     const nextIndex = (statusOrder.indexOf(livro.statusFront) + 1) % statusOrder.length;
     const novoStatusFront = statusOrder[nextIndex];
+
     livro.statusFront = novoStatusFront;
     livro.status = mapearStatusParaBackend(novoStatusFront);
     const statusInfo = mapearStatusParaFront(livro.status);
     livro.statusLabel = statusInfo.label;
     livro.statusColor = statusInfo.color;
+
     salvarNoLocalStorage();
-    atualizarEstatisticas();
     renderizarNovosLivros();
     atualizarTodasEstatisticas();
+
+    mostrarToast(`📖 Status alterado para: ${statusInfo.label}`);
 }
 
 function removerLivroJS(id) {
@@ -360,10 +661,10 @@ function removerLivroJS(id) {
     if (index !== -1) {
         livros.splice(index, 1);
         salvarNoLocalStorage();
-        atualizarEstatisticas();
         renderizarNovosLivros();
         atualizarTodasEstatisticas();
         atualizarFiltrosGenero();
+        mostrarToast('🗑️ Livro removido com sucesso!');
     }
 }
 
@@ -372,14 +673,16 @@ function salvarNoLocalStorage() {
 }
 
 // ============================================
-// FILTROS E ESTATÍSTICAS
+// FILTROS E ESTATÍSTICAS CORRIGIDOS
 // ============================================
 
 function adicionarFiltros() {
     const cabecalho = document.querySelector('.painel-cabecalho h3');
     if (!cabecalho) return;
+
     const filtrosExistentes = document.querySelector('.filtros-status');
     if (filtrosExistentes) filtrosExistentes.remove();
+
     const filtrosHTML = `<div class="filtros-status mt-3">
         <span class="filtro-status ${statusSelecionado === 'todos' ? 'active' : ''}" data-filtro="todos">Todos</span>
         <span class="filtro-status ${statusSelecionado === 'lendo' ? 'active' : ''}" data-filtro="lendo">Lendo</span>
@@ -387,10 +690,11 @@ function adicionarFiltros() {
         <span class="filtro-status ${statusSelecionado === 'emprestado' ? 'active' : ''}" data-filtro="emprestado">Emprestados</span>
         <span class="filtro-status ${statusSelecionado === 'desejado' ? 'active' : ''}" data-filtro="desejado">Desejados</span>
     </div>`;
+
     cabecalho.insertAdjacentHTML('afterend', filtrosHTML);
 
     document.querySelectorAll('.filtro-status').forEach(filtro => {
-        filtro.addEventListener('click', function() {
+        filtro.addEventListener('click', function () {
             statusSelecionado = this.dataset.filtro;
             document.querySelectorAll('.filtro-status').forEach(f => f.classList.remove('active'));
             this.classList.add('active');
@@ -402,21 +706,26 @@ function adicionarFiltros() {
 function adicionarFiltrosGenero() {
     const container = document.querySelector('.filtros-container');
     if (!container) return;
+
     const filtrosGeneroExistentes = document.querySelector('.filtros-genero');
     if (filtrosGeneroExistentes) filtrosGeneroExistentes.remove();
+
     const generosDisponiveis = obterGenerosDisponiveis();
+
     let filtrosHTML = `<div class="filtros-genero mt-3">
         <h6 class="mb-2">Filtrar por Gênero:</h6>
         <div class="filtros-genero-botoes">
             <span class="filtro-genero ${generoSelecionado === 'todos' ? 'active' : ''}" data-genero="todos">Todos</span>`;
+
     generosDisponiveis.forEach(genero => {
         filtrosHTML += `<span class="filtro-genero ${generoSelecionado === genero ? 'active' : ''}" data-genero="${genero}">${genero}</span>`;
     });
+
     filtrosHTML += `</div></div>`;
     container.insertAdjacentHTML('beforeend', filtrosHTML);
 
     document.querySelectorAll('.filtro-genero').forEach(filtro => {
-        filtro.addEventListener('click', function() {
+        filtro.addEventListener('click', function () {
             generoSelecionado = this.dataset.genero;
             document.querySelectorAll('.filtro-genero').forEach(f => f.classList.remove('active'));
             this.classList.add('active');
@@ -427,68 +736,71 @@ function adicionarFiltrosGenero() {
 
 function obterGenerosDisponiveis() {
     const generosSet = new Set();
-    const livrosHTML = document.querySelectorAll('#gradeLivrosRecentes .cartao-livro:not([data-id-js])');
-    livrosHTML.forEach(cartao => {
-        const generoTag = cartao.querySelector('.genero-livro')?.textContent;
-        if (generoTag) generosSet.add(generoTag);
-    });
+
     livros.forEach(livro => {
-        if (livro.genero) generosSet.add(livro.genero);
+        if (livro.genero && livro.genero !== '') {
+            generosSet.add(livro.genero);
+        }
     });
+
     return Array.from(generosSet).sort();
 }
 
 function atualizarFiltrosGenero() {
-    const generosDisponiveis = obterGenerosDisponiveis();
-    let perfil = JSON.parse(localStorage.getItem('bookHubPerfil')) || {};
-    perfil.generosDisponiveis = generosDisponiveis;
-    localStorage.setItem('bookHubPerfil', JSON.stringify(perfil));
     adicionarFiltrosGenero();
 }
 
 function aplicarFiltroLivros() {
-    const todosLivrosHTML = document.querySelectorAll('#gradeLivrosRecentes .cartao-livro:not([data-id-js])');
-    todosLivrosHTML.forEach(cartao => {
-        const etiqueta = cartao.querySelector('.etiqueta-status');
-        const generoDoLivro = cartao.querySelector('.genero-livro')?.textContent || 'Outros';
-        if (etiqueta) {
-            const statusLivro = etiqueta.className.split(' ')[1];
-            const statusMatch = statusSelecionado === 'todos' || statusLivro === statusSelecionado;
-            const generoMatch = generoSelecionado === 'todos' || generoDoLivro.toLowerCase() === generoSelecionado.toLowerCase();
+    // Filtrar livros HTML
+    document.querySelectorAll('#gradeLivrosRecentes .cartao-livro[data-tipo="html"]').forEach(cartao => {
+        const id = cartao.getAttribute('data-id');
+        const livro = livros.find(l => l.id === id);
+
+        if (livro) {
+            const statusMatch = statusSelecionado === 'todos' || livro.statusFront === statusSelecionado;
+            const generoMatch = generoSelecionado === 'todos' || livro.genero === generoSelecionado;
             cartao.style.display = (statusMatch && generoMatch) ? 'block' : 'none';
         }
     });
+
+    // Filtrar livros JS
     renderizarNovosLivros();
 }
 
 function atualizarEstatisticas() {
-    const livrosHTML = document.querySelectorAll('#gradeLivrosRecentes .cartao-livro:not([data-id-js])');
-    let totalHTML = livrosHTML.length, lendoHTML = 0, lidoHTML = 0, desejadoHTML = 0, emprestadoHTML = 0;
+    const todosLivros = obterTodosOsLivros();
 
-    livrosHTML.forEach(cartao => {
-        const etiqueta = cartao.querySelector('.etiqueta-status');
-        if (etiqueta) {
-            const statusClass = etiqueta.className.split(' ')[1];
-            if (statusClass === 'lendo') lendoHTML++;
-            else if (statusClass === 'lido') lidoHTML++;
-            else if (statusClass === 'desejado') desejadoHTML++;
-            else if (statusClass === 'emprestado') emprestadoHTML++;
-        }
+    // Log para debug
+    console.log('Total de livros únicos:', todosLivros.length);
+    console.log('Livros:', todosLivros.map(l => l.titulo));
+
+    let total = todosLivros.length;
+    let lendo = 0, lido = 0, desejado = 0, emprestado = 0;
+
+    todosLivros.forEach(livro => {
+        const status = livro.statusFront || 'lendo';
+        if (status === 'lendo') lendo++;
+        else if (status === 'lido') lido++;
+        else if (status === 'desejado') desejado++;
+        else if (status === 'emprestado') emprestado++;
     });
 
-    const lendoJS = livros.filter(l => l.statusFront === 'lendo').length;
-    const lidoJS = livros.filter(l => l.statusFront === 'lido').length;
-    const desejadoJS = livros.filter(l => l.statusFront === 'desejado').length;
-    const emprestadoJS = livros.filter(l => l.statusFront === 'emprestado').length;
+    // Atualizar elementos do DOM
+    const totalEl = document.getElementById('totalLivros');
+    const lendoEl = document.getElementById('lendoAgora');
+    const desejadoEl = document.getElementById('listaDesejos');
+    const emprestadoEl = document.getElementById('emprestimosAtivos');
 
-    document.getElementById('totalLivros').textContent = totalHTML + livros.length;
-    document.getElementById('lendoAgora').textContent = lendoHTML + lendoJS;
-    document.getElementById('listaDesejos').textContent = desejadoHTML + desejadoJS;
-    document.getElementById('emprestimosAtivos').textContent = emprestadoHTML + emprestadoJS;
+    if (totalEl) totalEl.textContent = total;
+    if (lendoEl) lendoEl.textContent = lendo;
+    if (desejadoEl) desejadoEl.textContent = desejado;
+    if (emprestadoEl) emprestadoEl.textContent = emprestado;
+
+    atualizarAvaliacaoMedia();
 }
 
 // ============================================
-// PERFIL DO USUÁRIO
+// PERFIL DO USUÁRIO - ESTATÍSTICAS CORRIGIDAS
 // ============================================
 
 function inicializarPerfilUsuario() {
@@ -502,12 +814,15 @@ function inicializarPerfilUsuario() {
 function carregarDadosPerfil() {
     const perfilSalvo = localStorage.getItem('bookHubPerfil');
     if (perfilSalvo) {
-        const perfil = JSON.parse(perfilSalvo);
-        if (perfil.bio) document.getElementById('bioUsuario').textContent = perfil.bio;
-        if (perfil.metaAnual) document.getElementById('metaAnual').textContent = perfil.metaAnual;
-        if (perfil.generos?.length) renderizarGeneros(perfil.generos);
+        try {
+            const perfil = JSON.parse(perfilSalvo);
+            if (perfil.bio) document.getElementById('bioUsuario').textContent = perfil.bio;
+            if (perfil.metaAnual) document.getElementById('metaAnual').textContent = perfil.metaAnual;
+        } catch (e) {
+            // Ignorar erro
+        }
     } else {
-        const perfilPadrao = { bio: 'Apaixonado(a) por leitura! 📚', metaAnual: 12, generos: [] };
+        const perfilPadrao = {bio: 'Apaixonado(a) por leitura! 📚', metaAnual: 12};
         localStorage.setItem('bookHubPerfil', JSON.stringify(perfilPadrao));
         document.getElementById('bioUsuario').textContent = perfilPadrao.bio;
         document.getElementById('metaAnual').textContent = perfilPadrao.metaAnual;
@@ -523,7 +838,7 @@ function configurarEventosPerfil() {
     }
 
     document.querySelectorAll('.filtro-ano-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function () {
             document.querySelectorAll('.filtro-ano-btn').forEach(b => b.classList.remove('active'));
             this.classList.add('active');
             filtrarLivrosPorAno(this.dataset.ano);
@@ -531,7 +846,7 @@ function configurarEventosPerfil() {
     });
 
     document.querySelectorAll('.filtro-genero-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function () {
             document.querySelectorAll('.filtro-genero-btn').forEach(b => b.classList.remove('active'));
             this.classList.add('active');
             filtrarGeneros(this.dataset.genero);
@@ -579,47 +894,64 @@ function salvarBioUsuario(novaBio) {
 }
 
 function calcularEstatisticasPerfil() {
-    const livrosHTML = document.querySelectorAll('#gradeLivrosRecentes .cartao-livro:not([data-id-js])');
-    const totalLivros = livrosHTML.length + livros.length;
-    let livrosLidosHTML = 0;
-    livrosHTML.forEach(cartao => {
-        if (cartao.querySelector('.etiqueta-status')?.className.includes('lido')) livrosLidosHTML++;
-    });
-    const livrosLidos = livrosLidosHTML + livros.filter(l => l.statusFront === 'lido').length;
+    const todosLivros = obterTodosOsLivros();
+    const totalLivros = todosLivros.length;
+    const livrosLidos = todosLivros.filter(l => l.statusFront === 'lido').length;
 
-    document.getElementById('tempoMedio').textContent = livrosLidos > 0 ? Math.round(365 / livrosLidos) : 0;
-    document.getElementById('avaliacaoMedia').textContent = livrosLidos > 0 ? '4.2' : '0.0';
-    document.getElementById('totalLivrosPerfil').textContent = totalLivros;
-    document.getElementById('livrosLidos').textContent = livrosLidos;
-    document.getElementById('paginasLidas').textContent = (livrosLidos * 300).toLocaleString();
-    document.getElementById('mesAtivo').textContent = 'Jan';
+    const tempoMedioEl = document.getElementById('tempoMedio');
+    const totalPerfilEl = document.getElementById('totalLivrosPerfil');
+    const lidosEl = document.getElementById('livrosLidos');
+    const paginasEl = document.getElementById('paginasLidas');
+    const mesAtivoEl = document.getElementById('mesAtivo');
+
+    if (tempoMedioEl) tempoMedioEl.textContent = livrosLidos > 0 ? Math.round(365 / livrosLidos) : 0;
+    if (totalPerfilEl) totalPerfilEl.textContent = totalLivros;
+    if (lidosEl) lidosEl.textContent = livrosLidos;
+    if (paginasEl) paginasEl.textContent = (livrosLidos * 300).toLocaleString();
+    if (mesAtivoEl) mesAtivoEl.textContent = 'Jan';
 
     const perfil = JSON.parse(localStorage.getItem('bookHubPerfil')) || {};
     const metaAnual = perfil.metaAnual || 12;
     const progresso = Math.min(Math.round((livrosLidos / metaAnual) * 100), 100);
     const progressoAnual = document.getElementById('progressoAnual');
+    const metaAnualEl = document.getElementById('metaAnual');
 
     if (progressoAnual) {
         progressoAnual.style.width = `${progresso}%`;
         progressoAnual.textContent = `${progresso}%`;
-        document.getElementById('metaAnual').textContent = metaAnual;
     }
+    if (metaAnualEl) metaAnualEl.textContent = metaAnual;
 }
 
+// ============================================
+// FILTRO POR ANO CORRIGIDO
+// ============================================
+
 function atualizarFiltroAno() {
-    const anos = [
-        { ano: '2024', quantidade: 8 },
-        { ano: '2023', quantidade: 12 },
-        { ano: '2022', quantidade: 10 },
-        { ano: '2021', quantidade: 6 },
-        { ano: '2020', quantidade: 4 }
-    ];
+    const todosLivros = obterTodosOsLivros();
+    const anosMap = new Map();
+
+    todosLivros.forEach(livro => {
+        const ano = livro.ano || new Date().getFullYear();
+        anosMap.set(ano, (anosMap.get(ano) || 0) + 1);
+    });
+
+    const anosArray = Array.from(anosMap.entries())
+        .map(([ano, quantidade]) => ({ ano: ano.toString(), quantidade }))
+        .sort((a, b) => b.ano.localeCompare(a.ano));
+
     const container = document.getElementById('livrosPorAno');
     if (!container) return;
 
+    if (anosArray.length === 0) {
+        container.innerHTML = `<div class="sem-dados"><i class="bi bi-calendar-x"></i><p>Nenhum livro adicionado</p></div>`;
+        return;
+    }
+
     let html = '<div class="grafico-barras">';
-    anos.forEach(item => {
-        html += `<div class="barra-ano" style="height: ${Math.min(item.quantidade * 15, 150)}px" title="${item.quantidade} livros em ${item.ano}">
+    anosArray.slice(0, 6).forEach(item => {
+        const altura = Math.min(item.quantidade * 30, 150);
+        html += `<div class="barra-ano" style="height: ${altura}px" title="${item.quantidade} livros em ${item.ano}">
             <span class="barra-valor">${item.quantidade}</span>
             <span class="barra-label">${item.ano}</span>
         </div>`;
@@ -630,63 +962,50 @@ function atualizarFiltroAno() {
 
 function filtrarLivrosPorAno(ano) {
     const container = document.getElementById('livrosPorAno');
+    const todosLivros = obterTodosOsLivros();
+
     if (ano === 'todos') {
         atualizarFiltroAno();
         return;
     }
 
-    const livrosExemplo = {
-        '2024': [
-            { titulo: 'Heartstopper - Volume 4', autor: 'Alice Oseman', capa: 'imgs/Heartstopper4.jpg' },
-            { titulo: 'A Empregada - Livro 2', autor: 'Freida McFadden', capa: 'imgs/A Empregada 2.jpg' },
-            { titulo: 'Harry Potter e as Relíquias da Morte', autor: 'J.K. Rowling', capa: 'imgs/Harry7.jpg' }
-        ],
-        '2023': [
-            { titulo: 'Heartstopper - Volume 3', autor: 'Alice Oseman', capa: 'imgs/Heartstopper3.jpg' },
-            { titulo: 'A Empregada - Livro 1', autor: 'Freida McFadden', capa: 'imgs/A Empregada.jpg' }
-        ],
-        '2022': [
-            { titulo: 'Heartstopper - Volume 1', autor: 'Alice Oseman', capa: 'imgs/Heartstopper1.jpg' },
-            { titulo: 'Heartstopper - Volume 2', autor: 'Alice Oseman', capa: 'imgs/Heartstopper2.png' }
-        ],
-        '2025': [
-            { titulo: '13 Reasons Why', autor: 'Jay Asher', capa: 'imgs/13reasonswhy.jpg' },
-            { titulo: 'Heartstopper - Volume 5', autor: 'Alice Oseman', capa: 'imgs/Heartstopper5.jpg' }
-        ],
-        '2026': [
-            { titulo: 'Harry Potter e o Cálice de Fogo', autor: 'J.K. Rowling', capa: 'imgs/Harry4.jpg' },
-            { titulo: 'Harry Potter e a Ordem da Fênix', autor: 'J.K. Rowling', capa: 'imgs/Harry5.jpg' }
-        ],
-        'anteriores': [
-            { titulo: 'Harry Potter e a Pedra Filosofal', autor: 'J.K. Rowling', capa: 'imgs/Harry1.jpg' },
-            { titulo: 'Harry Potter e a Câmara Secreta', autor: 'J.K. Rowling', capa: 'imgs/Harry2.jpg' },
-            { titulo: 'Harry Potter e o Prisioneiro de Azkaban', autor: 'J.K. Rowling', capa: 'imgs/Harry3.jpg' }
-        ]
-    };
+    let livrosFiltrados;
 
-    const livrosAno = livrosExemplo[ano] || [];
+    if (ano === 'anteriores') {
+        livrosFiltrados = todosLivros.filter(l => (l.ano || new Date().getFullYear()) < 2022);
+    } else {
+        livrosFiltrados = todosLivros.filter(l => (l.ano || new Date().getFullYear()).toString() === ano);
+    }
 
-    if (livrosAno.length === 0) {
+    if (livrosFiltrados.length === 0) {
         container.innerHTML = `<div class="sem-dados"><i class="bi bi-calendar-x"></i><p>Nenhum livro encontrado para ${ano}</p></div>`;
         return;
     }
 
     let html = '<div class="ano-lista">';
-    livrosAno.forEach(livro => {
+    livrosFiltrados.slice(0, 5).forEach(livro => {
         html += `<div class="ano-livro-item">
-            ${livro.capa ?
-            `<img src="${livro.capa}" alt="${livro.titulo}" class="ano-livro-capa">` :
+            ${livro.coverUrl ?
+            `<img src="${livro.coverUrl}" alt="${livro.titulo}" class="ano-livro-capa">` :
             `<div class="ano-livro-capa capa-padrao" style="width:40px;height:60px;font-size:0.7rem;">${livro.titulo.substring(0, 2)}</div>`
         }
             <div class="ano-livro-info">
                 <h6>${livro.titulo.length > 20 ? livro.titulo.substring(0, 20) + '...' : livro.titulo}</h6>
                 <span>${livro.autor}</span>
+                <small>${livro.ano || new Date().getFullYear()}</small>
             </div>
         </div>`;
     });
+    if (livrosFiltrados.length > 5) {
+        html += `<div class="mais-livros">+ ${livrosFiltrados.length - 5} mais</div>`;
+    }
     html += '</div>';
     container.innerHTML = html;
 }
+
+// ============================================
+// DISTRIBUIÇÃO POR GÊNERO CORRIGIDA
+// ============================================
 
 function atualizarFiltroGeneroPerfil() {
     const generos = detectarGenerosLivros();
@@ -700,11 +1019,11 @@ function atualizarFiltroGeneroPerfil() {
 
     generos.sort((a, b) => b.quantidade - a.quantidade);
     const topGeneros = generos.slice(0, 5);
-    const maxQuantidade = Math.max(...topGeneros.map(g => g.quantidade));
+    const maxQuantidade = Math.max(...topGeneros.map(g => g.quantidade), 1);
 
     let html = '<div class="grafico-barras">';
     topGeneros.forEach(genero => {
-        const altura = maxQuantidade > 0 ? Math.round((genero.quantidade / maxQuantidade) * 150) : 0;
+        const altura = Math.round((genero.quantidade / maxQuantidade) * 150);
         html += `<div class="barra-genero" style="height: ${altura}px" title="${genero.quantidade} livros de ${genero.nome}">
             <span class="barra-valor">${genero.quantidade}</span>
             <span class="barra-label">${genero.nome.substring(0, 10)}${genero.nome.length > 10 ? '...' : ''}</span>
@@ -721,23 +1040,8 @@ function filtrarGeneros(genero) {
         return;
     }
 
-    const livrosFiltrados = [];
-
-    document.querySelectorAll('#gradeLivrosRecentes .cartao-livro:not([data-id-js])').forEach(cartao => {
-        const generoTag = cartao.querySelector('.genero-livro')?.textContent || '';
-        if (generoTag === genero) {
-            const titulo = cartao.querySelector('.titulo-livro, .detalhes-livro h6, h6')?.textContent || '';
-            const autor = cartao.querySelector('.autor-livro, p')?.textContent || '';
-            const capa = cartao.querySelector('.capa-imagem')?.src || '';
-            livrosFiltrados.push({ titulo, autor, capa });
-        }
-    });
-
-    livros.forEach(livro => {
-        if (livro.genero === genero) {
-            livrosFiltrados.push({ titulo: livro.titulo, autor: livro.autor, capa: livro.coverUrl });
-        }
-    });
+    const todosLivros = obterTodosOsLivros();
+    const livrosFiltrados = todosLivros.filter(l => l.genero === genero);
 
     if (livrosFiltrados.length === 0) {
         container.innerHTML = `<div class="sem-dados"><i class="bi bi-book"></i><p>Nenhum livro encontrado para ${genero}</p></div>`;
@@ -747,8 +1051,8 @@ function filtrarGeneros(genero) {
     let html = '<div class="genero-lista">';
     livrosFiltrados.slice(0, 5).forEach(livro => {
         html += `<div class="genero-livro-item">
-            ${livro.capa && livro.capa !== '' ?
-            `<img src="${livro.capa}" alt="${livro.titulo}" class="genero-livro-capa">` :
+            ${livro.coverUrl && livro.coverUrl !== '' ?
+            `<img src="${livro.coverUrl}" alt="${livro.titulo}" class="genero-livro-capa">` :
             `<div class="genero-livro-capa capa-padrao" style="width:40px;height:60px;font-size:0.7rem;">${livro.titulo.substring(0, 2)}</div>`
         }
             <div class="genero-livro-info">
@@ -783,32 +1087,127 @@ function renderizarGeneros(generos) {
 function detectarGenerosLivros() {
     const contadorGeneros = {};
 
-    document.querySelectorAll('#gradeLivrosRecentes .cartao-livro:not([data-id-js])').forEach(cartao => {
-        const generoTag = cartao.querySelector('.genero-livro')?.textContent;
-        if (generoTag) contadorGeneros[generoTag] = (contadorGeneros[generoTag] || 0) + 1;
-    });
-
     livros.forEach(livro => {
-        if (livro.genero) contadorGeneros[livro.genero] = (contadorGeneros[livro.genero] || 0) + 1;
+        if (livro.genero && livro.genero !== '') {
+            contadorGeneros[livro.genero] = (contadorGeneros[livro.genero] || 0) + 1;
+        }
     });
 
-    const generosArray = Object.entries(contadorGeneros).map(([nome, quantidade]) => ({ nome, quantidade }));
+    const generosArray = Object.entries(contadorGeneros).map(([nome, quantidade]) => ({nome, quantidade}));
+
     let perfil = JSON.parse(localStorage.getItem('bookHubPerfil')) || {};
     perfil.generos = generosArray;
     localStorage.setItem('bookHubPerfil', JSON.stringify(perfil));
+
     renderizarGeneros(generosArray);
     return generosArray;
 }
 
 function atualizarTodasEstatisticas() {
+    console.log('Atualizando todas as estatísticas...');
+    console.log('Livros no array:', livros.length);
+
     atualizarEstatisticas();
     calcularEstatisticasPerfil();
     detectarGenerosLivros();
     atualizarFiltroGeneroPerfil();
+    atualizarFiltroAno();
 }
 
 // ============================================
-// INTEGRAÇÃO COM APIs GOOGLE BOOKS E OPEN LIBRARY
+// MODAL DE SINOPSE
+// ============================================
+
+let modalSinopseInstance = null;
+
+function inicializarModalSinopse() {
+    const modalSinopseEl = document.getElementById('modalSinopse');
+    if (modalSinopseEl) {
+        modalSinopseInstance = new bootstrap.Modal(modalSinopseEl);
+    }
+}
+
+async function abrirSinopse(titulo, autor, capa, genero, status) {
+    try {
+        document.getElementById('sinopseCapa').innerHTML = `<div class="sinopse-loading"><div class="spinner-border spinner-border-sm"></div></div>`;
+        document.getElementById('sinopseInfo').innerHTML = `<h3>${titulo}</h3><p>${autor}</p>`;
+        document.getElementById('sinopseConteudo').innerHTML = `
+            <div class="sinopse-loading">
+                <div class="spinner-border spinner-border-sm" role="status"></div>
+                <span>Buscando sinopse...</span>
+            </div>
+        `;
+
+        if (!modalSinopseInstance) {
+            modalSinopseInstance = new bootstrap.Modal(document.getElementById('modalSinopse'));
+        }
+        modalSinopseInstance.show();
+
+        const livroInfo = await buscarLivroInfo(titulo, autor);
+
+        let capaHTML = '';
+        if (capa && capa !== '') {
+            capaHTML = `<img src="${capa}" alt="${titulo}" onerror="this.onerror=null; this.src='https://via.placeholder.com/80x120?text=Sem+Capa';">`;
+        } else if (livroInfo?.capaPrincipal) {
+            capaHTML = `<img src="${livroInfo.capaPrincipal}" alt="${titulo}" onerror="this.onerror=null; this.src='https://via.placeholder.com/80x120?text=Sem+Capa';">`;
+        } else {
+            capaHTML = `<div style="width:100%;height:100%;background:linear-gradient(135deg,#6c5ce7,#a29bfe);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;">${titulo.substring(0, 2)}</div>`;
+        }
+        document.getElementById('sinopseCapa').innerHTML = capaHTML;
+
+        document.getElementById('sinopseInfo').innerHTML = `
+            <h3>${titulo}</h3>
+            <p><i class="bi bi-pencil"></i> ${autor}</p>
+            <span style="display:inline-block;background:rgba(255,255,255,0.2);padding:4px 12px;border-radius:20px;font-size:0.8rem;">
+                <i class="bi bi-tag"></i> ${genero || 'Não especificado'}
+            </span>
+            <span style="display:inline-block;background:${getStatusColor(status)};padding:4px 12px;border-radius:20px;font-size:0.8rem;margin-left:8px;">
+                <i class="bi bi-bookmark"></i> ${status}
+            </span>
+        `;
+
+        let sinopseHTML = '';
+        if (livroInfo?.sinopse) {
+            sinopseHTML = `<div class="sinopse-texto">${livroInfo.sinopse}</div>`;
+
+            if (livroInfo.googleBooksId) {
+                sinopseHTML += `<div class="fonte-badge"><i class="bi bi-google"></i> Fonte: Google Books</div>`;
+            } else if (livroInfo.openLibraryId) {
+                sinopseHTML += `<div class="fonte-badge"><i class="bi bi-book"></i> Fonte: Open Library</div>`;
+            }
+
+            if (livroInfo.isbn) {
+                sinopseHTML += `<div style="margin-top:10px;font-size:0.8rem;color:#636e72;"><i class="bi bi-upc-scan"></i> ISBN: ${livroInfo.isbn}</div>`;
+            }
+        } else {
+            sinopseHTML = `<div class="sinopse-texto text-muted"><i class="bi bi-info-circle"></i> Sinopse não disponível para este livro.</div>`;
+        }
+
+        document.getElementById('sinopseConteudo').innerHTML = sinopseHTML;
+
+    } catch (error) {
+        console.error('Erro ao buscar sinopse:', error);
+        document.getElementById('sinopseConteudo').innerHTML = `
+            <div class="sinopse-texto text-muted">
+                <i class="bi bi-exclamation-triangle"></i> 
+                Erro ao carregar sinopse. Tente novamente.
+            </div>
+        `;
+    }
+}
+
+function getStatusColor(status) {
+    const cores = {
+        'Lendo': '#6c5ce7',
+        'Lido': '#00b894',
+        'Emprestado': '#0984e3',
+        'Desejado': '#e17055'
+    };
+    return cores[status] || '#6c5ce7';
+}
+
+// ============================================
+// INTEGRAÇÃO COM APIs (mantido igual)
 // ============================================
 
 const API_CONFIG = {
@@ -958,7 +1357,7 @@ async function buscarOpenLibrary(titulo, autor) {
 }
 
 // ============================================
-// BUSCA AUTOMÁTICA E ISBN
+// BUSCA AUTOMÁTICA (mantido igual)
 // ============================================
 
 function adicionarBuscaAutomaticaAoFormulario() {
@@ -983,7 +1382,7 @@ function adicionarBuscaAutomaticaAoFormulario() {
 
     document.getElementById('autorLivro').insertAdjacentHTML('afterend', resultadoBuscaHTML);
 
-    document.getElementById('btnBuscarInfo').addEventListener('click', async function() {
+    document.getElementById('btnBuscarInfo').addEventListener('click', async function () {
         const titulo = document.getElementById('tituloLivro').value.trim();
         const autor = document.getElementById('autorLivro').value.trim();
         if (!titulo || !autor) {
@@ -1025,13 +1424,13 @@ function adicionarBuscaAutomaticaAoFormulario() {
 
                 const usarCapaBtn = resultadoDiv.querySelector('.usar-capa-btn');
                 if (usarCapaBtn) {
-                    usarCapaBtn.addEventListener('click', function() {
+                    usarCapaBtn.addEventListener('click', function () {
                         document.getElementById('capaLivro').value = this.dataset.capa;
                         alert('✅ URL da capa adicionada ao campo!');
                     });
                 }
 
-                document.getElementById('preencherDadosBtn').addEventListener('click', function() {
+                document.getElementById('preencherDadosBtn').addEventListener('click', function () {
                     if (livroInfo.capaPrincipal) document.getElementById('capaLivro').value = livroInfo.capaPrincipal;
                     resultadoContainer.style.display = 'none';
                     alert('✅ Dados do livro preenchidos automaticamente!');
@@ -1051,6 +1450,10 @@ function adicionarBuscaAutomaticaAoFormulario() {
         }
     });
 }
+
+// ============================================
+// BUSCA POR ISBN (mantido igual)
+// ============================================
 
 async function buscarPorISBN(isbn) {
     try {
@@ -1110,7 +1513,7 @@ function adicionarBuscaPorISBN() {
 
     document.getElementById('generoLivro').parentElement.insertAdjacentHTML('afterend', isbnHTML);
 
-    document.getElementById('btnBuscarISBN').addEventListener('click', async function() {
+    document.getElementById('btnBuscarISBN').addEventListener('click', async function () {
         const isbn = document.getElementById('isbnLivro').value.trim();
         if (!isbn) {
             alert('Por favor, digite um ISBN');
@@ -1140,61 +1543,43 @@ function adicionarBuscaPorISBN() {
 }
 
 // ============================================
-// OBSERVADOR PARA NOVOS LIVROS
+// OBSERVADOR PARA NOVOS LIVROS (CORRIGIDO)
 // ============================================
 
 function iniciarObservadorDeLivros() {
     const gradeLivros = document.getElementById('gradeLivrosRecentes');
     if (gradeLivros) {
-        const observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-                mutation.addedNodes.forEach(function(node) {
-                    if (node.nodeType === 1 && node.classList?.contains('cartao-livro')) {
-                        if (!node.hasAttribute('data-id-js')) {
-                            const capaContainer = node.querySelector('.capa-container');
-                            if (capaContainer && !capaContainer.querySelector('.btn-sinopse')) {
-                                const sinopseBtn = document.createElement('button');
-                                sinopseBtn.className = 'btn-sinopse';
-                                sinopseBtn.title = 'Ver sinopse';
-                                sinopseBtn.innerHTML = '<i class="bi bi-file-text"></i>';
-
-                                sinopseBtn.addEventListener('click', function(e) {
-                                    e.stopPropagation();
-                                    const titulo = node.querySelector('.titulo-livro, .detalhes-livro h6, h6')?.textContent?.trim() || 'Título desconhecido';
-                                    const autor = node.querySelector('.autor-livro, p')?.textContent?.trim() || 'Autor desconhecido';
-                                    const capa = node.querySelector('.capa-imagem')?.src || '';
-                                    const genero = node.querySelector('.genero-livro')?.textContent || 'Não especificado';
-                                    const statusEl = node.querySelector('.etiqueta-status');
-                                    const status = statusEl?.textContent?.trim() || 'Desconhecido';
-
-                                    abrirSinopse(titulo, autor, capa, genero, status);
-                                });
-
-                                capaContainer.appendChild(sinopseBtn);
+        const observer = new MutationObserver(function (mutations) {
+            mutations.forEach(function (mutation) {
+                if (mutation.type === 'childList') {
+                    mutation.addedNodes.forEach(function (node) {
+                        if (node.nodeType === 1 && node.classList?.contains('cartao-livro')) {
+                            if (!node.hasAttribute('data-processado')) {
+                                setTimeout(() => {
+                                    processarLivrosHTMLExistentes();
+                                    atualizarTodasEstatisticas();
+                                }, 100);
                             }
                         }
-                    }
-                });
+                    });
+                }
             });
         });
 
-        observer.observe(gradeLivros, { childList: true, subtree: true });
+        observer.observe(gradeLivros, {childList: true, subtree: true});
     }
 }
 
 // ============================================
-// DEBOUNCE E UTILIDADES
+// UTILIDADES
 // ============================================
 
 function debounce(func, wait) {
     let timeout;
-    return function(...args) {
+    return function (...args) {
         clearTimeout(timeout);
         timeout = setTimeout(() => func(...args), wait);
     };
 }
 
-// Iniciar observador após carregar a página
-setTimeout(iniciarObservadorDeLivros, 500);
-
-console.log('✅ Book Hub iniciado com sucesso! Botão de sinopse adicionado!');
+console.log('✅ Book Hub iniciado com sucesso! Estatísticas corrigidas!');

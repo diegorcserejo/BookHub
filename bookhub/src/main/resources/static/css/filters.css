@@ -1,0 +1,228 @@
+.filtros-status {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.filtro-status {
+    padding: 6px 15px;
+    border-radius: 20px;
+    background: var(--cor-fundo);
+    border: 2px solid transparent;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+    color: var(--texto-secundario);
+}
+
+.filtro-status:hover,
+.filtro-status.active {
+    background: var(--cor-navbar);
+    color: white;
+    border-color: var(--cor-navbar);
+}
+
+.filtros-container {
+    margin-bottom: 25px;
+}
+
+.filtros-genero {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 15px;
+    border: 1px solid #e9ecef;
+    animation: slideInFiltro 0.3s ease-out;
+}
+
+.filtros-genero h6 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--texto-principal);
+    margin: 0 0 10px 0;
+}
+
+.filtros-genero-botoes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.filtro-genero {
+    padding: 6px 12px;
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 20px;
+    color: var(--texto-secundario);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.85rem;
+    display: inline-block;
+}
+
+.filtro-genero:hover {
+    border-color: var(--cor-navbar);
+    color: var(--cor-navbar);
+}
+
+.filtro-genero.active {
+    background: var(--cor-navbar);
+    color: white;
+    border-color: var(--cor-navbar);
+}
+
+.filtro-genero-opcoes {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.filtro-genero-btn {
+    padding: 6px 12px;
+    background: var(--cor-fundo);
+    border: 2px solid transparent;
+    border-radius: 20px;
+    color: var(--texto-secundario);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.85rem;
+}
+
+.filtro-genero-btn:hover,
+.filtro-genero-btn.active {
+    background: var(--cor-navbar);
+    color: white;
+    border-color: var(--cor-navbar);
+}
+
+.livros-por-generos {
+    min-height: 200px;
+    padding: 10px 0;
+}
+
+.barra-genero {
+    flex: 1;
+    background: linear-gradient(to top, #6c5ce7, #a29bfe);
+    border-radius: 5px 5px 0 0;
+    position: relative;
+    min-height: 20px;
+    transition: height 0.3s ease;
+    margin: 0 2px;
+}
+
+.barra-genero:hover {
+    opacity: 0.8;
+    transform: scale(1.05);
+}
+
+.genero-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.genero-livro-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.genero-livro-item:hover {
+    background: #e9ecef;
+    transform: translateX(5px);
+}
+
+.genero-livro-capa {
+    width: 45px;
+    height: 65px;
+    border-radius: 6px;
+    object-fit: cover;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.genero-livro-info h6 {
+    font-size: 0.9rem;
+    margin: 0 0 4px 0;
+    color: var(--texto-principal);
+    font-weight: 600;
+}
+
+.genero-livro-info span {
+    font-size: 0.8rem;
+    color: var(--texto-secundario);
+}
+
+.mais-livros {
+    text-align: center;
+    padding: 10px;
+    color: var(--cor-navbar);
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    background: rgba(108, 92, 231, 0.1);
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.mais-livros:hover {
+    background: rgba(108, 92, 231, 0.2);
+}
+
+.filtro-ativo-indicador {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: var(--cor-navbar);
+    border-radius: 50%;
+    margin-left: 5px;
+    animation: pulse 1.5s infinite;
+}
+
+.contador-filtro {
+    font-size: 0.8rem;
+    color: var(--texto-secundario);
+    margin-left: 5px;
+    background: rgba(0,0,0,0.05);
+    padding: 1px 6px;
+    border-radius: 10px;
+}
+
+.multi-filtro-ativo {
+    background: linear-gradient(135deg, #6c5ce7, #fd79a8);
+    color: white;
+}
+
+.btn-limpar-filtros {
+    background: transparent;
+    border: 2px solid #e74c3c;
+    color: #e74c3c;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-left: 10px;
+}
+
+.btn-limpar-filtros:hover {
+    background: #e74c3c;
+    color: white;
+}
+
+@keyframes slideInFiltro {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

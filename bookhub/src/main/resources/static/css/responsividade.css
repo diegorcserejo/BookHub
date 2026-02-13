@@ -1,0 +1,218 @@
+@media (max-width: 991px) {
+    .row.mt-5 .col-lg-4 {
+        flex: 0 0 50%;
+        max-width: 50%;
+    }
+}
+
+@media (max-width: 768px) {
+    .barra-navegacao-estilizada span {
+        display: none;
+    }
+
+    .botao-adicionar span {
+        display: none;
+    }
+
+    .botao-adicionar {
+        padding: 8px 15px;
+    }
+
+    .cartao-estatistica {
+        padding: 20px;
+        min-height: 140px;
+    }
+
+    .valor-estatistica {
+        font-size: 2rem;
+    }
+
+    .grade-livros {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 15px;
+    }
+
+    .titulo-livro {
+        font-size: 0.85rem;
+    }
+
+    .autor-livro {
+        font-size: 0.8rem;
+    }
+
+    .btn-status {
+        min-width: 100px;
+        font-size: 0.8rem;
+        padding: 8px 10px;
+    }
+
+    .filtros-status {
+        gap: 5px;
+    }
+
+    .filtro-status {
+        padding: 5px 12px;
+        font-size: 0.8rem;
+    }
+
+    .foto-perfil-container {
+        width: 100px;
+        height: 100px;
+    }
+
+    .foto-perfil-placeholder {
+        font-size: 2.5rem;
+    }
+
+    .filtro-ano-opcoes {
+        gap: 5px;
+    }
+
+    .filtro-ano-btn {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+
+    .estatistica-item {
+        padding: 10px;
+    }
+
+    .icone-estatistica {
+        width: 40px;
+        height: 40px;
+        font-size: 1.2rem;
+    }
+
+    .estrelas-avaliacao {
+        font-size: 1.8rem;
+        gap: 5px;
+    }
+
+    .modal-detalhes-header {
+        flex-direction: column;
+        text-align: center;
+        padding: 15px;
+    }
+
+    .modal-detalhes-capa {
+        width: 80px;
+        height: 120px;
+    }
+
+    .modal-detalhes-corpo {
+        padding: 15px;
+    }
+
+    .modal-sinopse-header {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .modal-sinopse-capa {
+        width: 60px;
+        height: 90px;
+    }
+
+    .filtros-genero-botoes,
+    .filtro-genero-opcoes {
+        gap: 5px;
+    }
+
+    .filtro-genero,
+    .filtro-genero-btn {
+        padding: 5px 10px;
+        font-size: 0.8rem;
+    }
+
+    .filtros-genero {
+        padding: 12px;
+    }
+
+    .genero-livro-item {
+        padding: 8px;
+    }
+
+    .genero-livro-capa {
+        width: 35px;
+        height: 50px;
+    }
+
+    .row.mt-5 .col-lg-4 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 576px) {
+    .layout-principal {
+        padding: 5px;
+    }
+
+    .barra-navegacao-estilizada {
+        margin: 5px;
+        padding: 10px 15px;
+    }
+
+    .cartao-estatistica {
+        padding: 15px;
+        min-height: 120px;
+    }
+
+    .valor-estatistica {
+        font-size: 1.8rem;
+    }
+
+    .grade-livros {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 10px;
+    }
+
+    .painel-dashboard {
+        padding: 15px;
+    }
+
+    .filtros-genero-botoes {
+        gap: 4px;
+    }
+
+    .filtro-genero {
+        padding: 4px 8px;
+        font-size: 0.75rem;
+    }
+
+    .badge-genero {
+        top: 5px;
+        left: 5px;
+        font-size: 0.6rem;
+        padding: 1px 6px;
+    }
+
+    .filtros-container {
+        margin-bottom: 15px;
+    }
+}
+
+/* Container principal do perfil */
+.row.mt-5 {
+    display: flex;
+    flex-wrap: wrap;
+    margin-right: -12px;
+    margin-left: -12px;
+}
+
+/* Cards do perfil - 3 colunas lado a lado */
+.row.mt-5 .col-lg-4 {
+    flex: 0 0 33.333333%;
+    max-width: 33.333333%;
+    padding-right: 12px;
+    padding-left: 12px;
+}
+
+.painel-dashboard + .painel-dashboard {
+    margin-top: 0;
+}
+
+.row.mt-5 > div {
+    display: flex;
+    flex-direction: column;
+}
